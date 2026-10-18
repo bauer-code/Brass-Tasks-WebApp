@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="beige" x2=".8" y2="1"><stop stop-color="#eadab5"/><stop offset="1" stop-color="#b7a079"/></linearGradient>
+    <linearGradient id="brown" x2=".6" y2="1"><stop stop-color="#967855"/><stop offset="1" stop-color="#493222"/></linearGradient>
+    <linearGradient id="bronze" x2="1" y2="1"><stop stop-color="#e3b782"/><stop offset=".5" stop-color="#80502f"/><stop offset="1" stop-color="#b7824b"/></linearGradient>
+    <radialGradient id="face" cx=".35" cy=".3" r=".9"><stop stop-color="#fff0ce"/><stop offset="1" stop-color="#d9bc81"/></radialGradient>
+    <linearGradient id="key" x2=".3" y2="1"><stop stop-color="#fff5dd"/><stop offset="1" stop-color="#d8c5a1"/></linearGradient>
+  </defs>
+  <!-- The twin-bell clock sits behind the typewriter, with a clear silhouette. -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <path d="M326 90q1-66 48-66t47 66" fill="none" stroke="#443021" stroke-width="13"/>
+    <path d="M326 88q1-61 48-61t47 61" fill="none" stroke="#b58050" stroke-width="6"/>
+    <path d="m309 121-19-31q13-45 64-40l17 29z" fill="url(#brown)" stroke="#513622" stroke-width="7"/>
+    <path d="m424 121 33-31q-11-45-61-40l-18 29z" fill="url(#brown)" stroke="#513622" stroke-width="7"/>
+    <path d="m326 290-22 43m121-43 22 43" stroke="#443021" stroke-width="16"/>
+    <path d="m326 287-22 43m121-43 22 43" stroke="url(#bronze)" stroke-width="10"/>
+    <circle cx="375" cy="193" r="105" fill="#352a20"/>
+    <circle cx="372" cy="188" r="103" fill="url(#bronze)" stroke="#513622" stroke-width="5"/>
+    <circle cx="372" cy="188" r="88" fill="url(#face)" stroke="#6a4a2c" stroke-width="5"/>
+    <g stroke="#725231" stroke-width="5"><path d="M372 112v11m0 130v11m-76-76h11m130 0h11m-130-54 8 8m92 92 8 8m0-108-8 8m-92 92-8 8"/></g>
+    <path d="M372 188v-48m0 48 34 22" fill="none" stroke="#5a3823" stroke-width="9"/>
+    <circle cx="372" cy="188" r="8" fill="#a93228"/>
+  </g>
+  <!-- Paper, folded corner and checklist give the typewriter a recognizable top. -->
+  <path d="M76 49h149l38 38v159H76z" fill="#fff1d5" stroke="#6b5439" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M225 49v38h38" fill="#d9c6a2" stroke="#6b5439" stroke-width="6" stroke-linejoin="round"/>
+  <g fill="none" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="m98 120 9 9 17-20" stroke="#a93228"/><path d="M144 120h74M144 159h57" stroke="#937b55"/><rect x="98" y="147" width="20" height="20" stroke="#937b55"/></g>
+  <!-- Stepped case depth, dark hood and ivory keys echo the actual application. -->
+  <path d="M26 269h351v184q0 20-20 20H46q-20 0-20-20z" fill="#5d472e"/>
+  <rect x="20" y="269" width="351" height="191" rx="20" fill="url(#beige)" stroke="#6b5439" stroke-width="7"/>
+  <rect x="25" y="216" width="340" height="93" rx="17" fill="url(#brown)" stroke="#4f3826" stroke-width="7"/>
+  <rect x="39" y="202" width="310" height="24" rx="9" fill="#37332a" stroke="#b9a47b" stroke-width="5"/>
+  <path d="M117 244q80 73 164 0l-29-5q-55 38-106 0z" fill="#29231b" stroke="#b3996d" stroke-width="4"/>
+  <g stroke="#a18a63" stroke-width="3"><path d="m130 247 19 14m2-15 16 27m7-25 8 30m17-28v31m22-33-8 30m29-32-15 27m38-26-25 16"/></g>
+  <path d="m193 251 8-14 8 14m-8-14v26" fill="none" stroke="#d9c8a0" stroke-width="4"/>
+  <rect x="44" y="318" width="303" height="99" rx="12" fill="#30291f" stroke="#84704e" stroke-width="5"/>
+  <g fill="#947a53"><rect x="58" y="335" width="28" height="25" rx="8"/><rect x="98" y="335" width="28" height="25" rx="8"/><rect x="138" y="335" width="28" height="25" rx="8"/><rect x="178" y="335" width="28" height="25" rx="8"/><rect x="218" y="335" width="28" height="25" rx="8"/><rect x="258" y="335" width="28" height="25" rx="8"/><rect x="298" y="335" width="28" height="25" rx="8"/><rect x="76" y="376" width="28" height="25" rx="8"/><rect x="116" y="376" width="28" height="25" rx="8"/><rect x="156" y="376" width="28" height="25" rx="8"/><rect x="196" y="376" width="28" height="25" rx="8"/><rect x="236" y="376" width="28" height="25" rx="8"/><rect x="276" y="376" width="28" height="25" rx="8"/></g>
+  <g fill="url(#key)"><rect x="57" y="329" width="28" height="25" rx="8"/><rect x="97" y="329" width="28" height="25" rx="8"/><rect x="137" y="329" width="28" height="25" rx="8"/><rect x="177" y="329" width="28" height="25" rx="8"/><rect x="217" y="329" width="28" height="25" rx="8"/><rect x="257" y="329" width="28" height="25" rx="8"/><rect x="297" y="329" width="28" height="25" rx="8"/><rect x="75" y="370" width="28" height="25" rx="8"/><rect x="115" y="370" width="28" height="25" rx="8"/><rect x="155" y="370" width="28" height="25" rx="8"/><rect x="195" y="370" width="28" height="25" rx="8"/><rect x="235" y="370" width="28" height="25" rx="8"/></g>
+  <rect x="275" y="370" width="28" height="25" rx="8" fill="#b34032"/>
+  <rect x="110" y="428" width="172" height="17" rx="4" fill="#8c7551"/>
+  <rect x="109" y="422" width="172" height="17" rx="4" fill="#ebd9b2"/>
+</svg>

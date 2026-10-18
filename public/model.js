@@ -1,0 +1,54 @@
+(function(root) {
+  const KEY = 'brass-tasks-webapp.v1';
+  function parseMarkdown(markdown) {
+    const lines = markdown.split(/\r?\n/); const tasks = [];
+    let title = '', section = '', fence = null, frontmatter = lines[0]?.trim() === '---';
+    lines.forEach((line, index) => {
+      if (frontmatter) { if(index > 0 && /^(---|\.\.\.)\s*$/.test(line)) frontmatter = false; return; }
+      const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+      if (marker) { if(!fence) fence = marker[1]; else if(marker[1][0] === fence[0] && marker[1].length >= fence.length) fence = null; return; }
+      if (fence) return;
+      const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*$/);
+      if (heading) { if(heading[1].length === 1 && !title) title = heading[2]; else section = heading[2]; }
+      const task = line.match(/^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\]\s+)(.+)$/);
+      if (task) tasks.push({ line:index, text:task[4], done:task[2].toLowerCase() === 'x', section });
+    });
+    return { title, tasks };
+  }
+  function changeTask(markdown, lineIndex, action, text) {
+    const parsed = parseMarkdown(markdown);
+    const task = parsed.tasks.find(t => t.line === lineIndex);
+    if (!task) throw Error('This task changed. Please try again.');
+    const newline = markdown.includes('\r\n') ? '\r\n' : '\n';
+    const lines = markdown.split(/\r?\n/);
+    if(action === 'remove') lines.splice(lineIndex, 1);
+    else if(action === 'toggle') lines[lineIndex] = lines[lineIndex].replace(/^(\s*(?:[-*+]|\d+[.)])\s+\[)[ xX](\])/, (_,a,b) => a + (task.done ? ' ' : 'x') + b);
+    else if(action === 'edit') lines[lineIndex] = lines[lineIndex].replace(/^(\s*(?:[-*+]|\d+[.)])\s+\[[ xX]\]\s+).+$/, (_,prefix) => prefix + cleanText(text));
+    return lines.join(newline);
+  }
+  function cleanText(text) { const value = String(text || '').replace(/[\r\n]+/g, ' ').trim(); if(!value || value.length > 500) throw Error('Enter between 1 and 500 characters.'); return value; }
+  function addTask(markdown, text) { const nl = markdown.includes('\r\n') ? '\r\n' : '\n'; return markdown.replace(/\s*$/, '') + nl + '- [ ] ' + cleanText(text) + nl; }
+  function fresh() { return { version:1, revision:0, activeId:null, plans:[], sessions:[], preferences:{ focus:false, muted:false, tickMuted:true, bellMuted:false, digital:true }, timer:{} }; }
+  function validate(value) {
+    if (!value || value.version !== 1 || !Array.isArray(value.plans) || !Array.isArray(value.sessions) || value.plans.length > 1000 || value.sessions.length > 10000) throw Error('This is not a valid Brass & Tasks backup.');
+    const ids = new Set();
+    for(const plan of value.plans) {
+      if(!plan || typeof plan.id !== 'string' || ids.has(plan.id) || typeof plan.title !== 'string' || typeof plan.markdown !== 'string' || plan.markdown.length > 2000000 || !['active','archived'].includes(plan.status)) throw Error('The backup contains an invalid plan.');
+      ids.add(plan.id);
+    }
+    for(const session of value.sessions) if(!session || typeof session.id !== 'string' || typeof session.title !== 'string' || typeof session.note !== 'string' || !Number.isFinite(session.at)) throw Error('The backup contains an invalid session.');
+    const defaults = fresh();
+    const result = { ...defaults, plans:value.plans, sessions:value.sessions, activeId:ids.has(value.activeId) ? value.activeId : null, timer:value.timer && typeof value.timer === 'object' ? value.timer : {}, revision:Number.isSafeInteger(value.revision) ? value.revision : 0 };
+    for(const key of Object.keys(defaults.preferences)) if(typeof value.preferences?.[key] === 'boolean') result.preferences[key] = value.preferences[key];
+    return result;
+  }
+  function commit(storage, state, expectedRevision) {
+    const previous = storage.getItem(KEY);
+    if(previous && JSON.parse(previous).revision !== expectedRevision) throw Error('Another tab updated this workspace. Reload before editing.');
+    const next = { ...state, revision:expectedRevision + 1 };
+    storage.setItem(KEY, JSON.stringify(next));
+    return next;
+  }
+  const api = { KEY, parseMarkdown, changeTask, addTask, cleanText, fresh, validate, commit };
+  if(typeof module !== 'undefined' && module.exports) module.exports = api; else root.BrassModel = api;
+})(globalThis);

@@ -1,0 +1,67 @@
+/* The case, keycaps and clock use layered bevels to give the desk objects depth. */
+:root { --machine-width:424px; --paper-width:326px; }
+#workspace { position:absolute; inset:0; }
+#machine { left:22px; bottom:24px; width:var(--machine-width); }
+#paper-window { width:var(--paper-width); max-height:min(320px,calc(100vh - 425px)); }
+#paper { width:var(--paper-width); max-height:min(320px,calc(100vh - 425px)); border-color:#594934; background:linear-gradient(90deg,#e5d6b9,#f7eedb 9%,#f2e6ce 91%,#dfceb0); padding:16px 19px 13px; }
+body.list #paper-window,body.list #paper { max-height:min(520px,calc(100vh - 425px)); }
+.top { width:100%; height:116px; padding:9px 40px 0; border-color:#38291e; border-radius:10px 10px 3px 3px; background:linear-gradient(165deg,#8c7354 0%,#70573c 32%,#59412e 88%); box-shadow:inset 0 2px #af9675,inset 0 -9px #443021,4px 5px 0 #2c2119; }
+.roller { width:334px; height:20px; border:2px solid #211c18; border-radius:5px; background:linear-gradient(#817d73,#38372f 28%,#22231e 63%,#5e5b50); box-shadow:0 3px #b6a78a; }
+.slot { width:310px; height:5px; margin-top:3px; background:#211c18; }
+.roller-knob { position:absolute; top:7px; width:21px; height:27px; border:2px solid #4b3b2a; border-radius:5px; background:repeating-linear-gradient(90deg,#dac9a4 0 2px,#a08e6c 2px 3px); box-shadow:2px 2px #2c231b; }
+.roller-knob.left { left:7px; }.roller-knob.right { right:7px; }
+.hood-detail { position:absolute; width:237px; height:60px; top:39px; left:91px; pointer-events:none; }
+.hood-detail svg { width:100%; height:100%; filter:drop-shadow(0 2px 0 #a38a64); }
+.fan-bed { fill:#201b16; stroke:#aa906b; stroke-width:2; }
+#typebars line { stroke:#9a8a6c; stroke-width:1.25; }
+.type-guide { fill:none; stroke:#d7c8a8; stroke-width:3; }
+.brand { position:absolute; bottom:19px; left:16px; color:#e9d7b7; font:italic 12px Georgia,serif; letter-spacing:.5px; }
+#new-plan { right:17px; top:62px; width:29px; height:31px; border:1px solid #3a2a1d; border-radius:3px; background:linear-gradient(#f5e9d1,#cbbc97); box-shadow:2px 3px 0 #352519,inset 0 1px #fff4dc; }
+#new-plan:hover { background:#f7edd9; transform:translateY(-1px); }
+.body { width:100%; gap:10px; border:3px solid #685438; border-top:0; border-bottom:9px solid #9b8760; border-radius:0 0 8px 8px; padding:12px 21px 16px; background:linear-gradient(110deg,#dbcaa4,#c7b58d 52%,#b5a178); box-shadow:inset 3px 0 #e4d5b4,inset -4px 0 #9a855e,4px 5px 0 #54422e; }
+.status { min-height:29px; border:1px solid #8d7855; border-radius:3px; box-shadow:inset 0 2px 1px #d3c29f; background:#e8dabc; padding:2px 5px; }
+.status button { min-width:25px; font-size:11px; }
+.status #close { border-radius:2px; }.status #minimize { font-size:13px; color:#655037; }
+#idle { padding:8px 0 5px; }#idle p { font-size:8px; }#idle p+p { font-size:5px; }
+#keys { padding:10px 0 8px; border:2px solid #786548; border-radius:7px 7px 14px 14px; gap:7px; background:linear-gradient(#201d17,#3a3023); box-shadow:inset 0 6px 5px #0f0e0a; }
+.key-row { gap:6px; }
+.key { width:27px; height:25px; border:1px solid #8d7a57; border-radius:9px 9px 8px 8px; background:linear-gradient(145deg,#fff6e2,#e9d9b7 78%); font-size:6px; color:#332a1d; box-shadow:0 4px 0 #aa9470,1px 6px 0 #100f0b,inset 0 1px 1px #fff7e6; transform:rotate(-2deg); }
+.key-row:nth-child(2) .key:nth-child(even),.key-row:nth-child(4) .key:nth-child(odd) { transform:rotate(2deg); }
+.key.accent { background:linear-gradient(#c94d3e,#9d2c25); color:#fff0d5; border-color:#76251f; box-shadow:0 4px #75251f,1px 6px #100f0b,inset 0 1px #dd7763; }
+.space { width:174px; height:21px; margin:4px 0 3px; border:1px solid #94805d; border-radius:3px; background:linear-gradient(#e5d3ab,#c4ae83); box-shadow:0 5px #8b7654,1px 7px #100f0b,inset 0 1px #f8e9c8; }
+.signature { font-size:4px; opacity:.8; }.feet { padding:4px 29px 0; }.feet i { width:32px; height:8px; border-radius:0 0 4px 4px; background:#2b251d; }
+body.dragover .body { outline:0; }
+#file-tray { position:relative; width:326px; height:170px; margin:0 auto 7px; z-index:4; -webkit-app-region:no-drag; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; border:5px solid #8b8e8c; border-bottom-width:9px; border-radius:5px 5px 1px 1px; background:linear-gradient(135deg,#bdc0bc,#a7aaa6); box-shadow:inset 4px 4px 5px #757a76,inset -4px -2px #d1d4cf,3px 4px #454b46; color:#303730; }
+#file-tray strong { font-size:7px; letter-spacing:1px; }#file-tray>span { font-size:5px; }
+.tray-paper { width:25px; height:30px; fill:#f6ecd5; stroke:#5a624f; stroke-width:2; }
+#tray-browse { border:1px solid #656d63; border-radius:2px; padding:7px 12px; background:#dde0d6; font-size:6px; box-shadow:0 2px #6f786d; }
+#tray-close { position:absolute; top:5px; right:6px; font-size:12px; }
+body.importing #paper-window { display:none; }
+body.dragover #file-tray { outline:2px dashed #fbf4dc; outline-offset:-14px; background:#bdc7b6; }
+#pomodoro { width:220px; position:absolute; right:24px; bottom:49px; padding-top:52px; -webkit-app-region:drag; }
+.clock-handle { position:absolute; top:6px; left:61px; width:100px; height:63px; border:5px solid #774626; border-radius:50% 50% 0 0; box-shadow:inset 0 2px #e1ae73,0 -1px #e5ba83; }
+.clock-bell { position:absolute; top:38px; width:84px; height:42px; border:2px solid #4d3021; border-radius:60px 60px 10px 10px; background:linear-gradient(150deg,#b58252,#3a3025 55%,#261f18); box-shadow:inset 0 3px #c28f5d,0 3px #8d5e38; z-index:2; }
+.clock-bell::before { content:''; position:absolute; top:-11px; left:38px; width:8px; height:10px; border:1px solid #604028; background:#ba8855; }
+.bell-left { left:12px; transform:rotate(-26deg); }.bell-right { right:9px; transform:rotate(26deg); }
+.clock-hammer { position:absolute; top:49px; left:109px; width:3px; height:32px; background:#cda071; z-index:3; }.clock-hammer::before { content:''; width:25px; height:7px; position:absolute; left:-11px; top:-1px; background:#7f5231; border:1px solid #d19a64; border-radius:3px; }
+.clock-case { width:220px; height:220px; position:relative; z-index:4; border:4px solid #443326; border-radius:50%; padding:9px; background:linear-gradient(115deg,#c69561,#5b3924 46%,#b47f4a 85%); box-shadow:inset 2px 1px #f0c797,inset -3px -2px #35291f,3px 5px 0 #2d261e; }
+.clock-face { position:relative; width:100%; height:100%; border:3px solid #6a5539; border-radius:50%; background:radial-gradient(ellipse at 37% 32%,#fff2d0,#e0c995 88%); box-shadow:inset 2px 3px 8px #a08b63; }
+#clock-dial { width:100%; height:100%; position:absolute; inset:0; }
+#clock-ticks line { stroke:#826c48; stroke-width:1; }#clock-ticks .major { stroke:#4f3f2b; stroke-width:1.7; }
+#clock-numbers text { font-family:Georgia,serif; font-size:14px; font-weight:bold; text-anchor:middle; dominant-baseline:central; fill:#473725; }
+#clock-hand { stroke:#9f3428; stroke-width:2; transform-origin:100px 100px; }.clock-pin { fill:#735333; stroke:#cda568; stroke-width:2; }
+#timer-mode { position:absolute; top:51px; width:100%; text-align:center; font-size:6px; letter-spacing:1px; color:#6f5635; }
+#timer-time { position:absolute; top:107px; left:41px; width:108px; text-align:center; font:16px 'Press Start 2P',monospace; color:#3f3525; background:#ecddba; border:1px solid #c3ac7f; padding:7px 3px 6px; border-radius:2px; }
+#timer-target { position:absolute; top:143px; width:100%; text-align:center; font-size:5px; letter-spacing:.5px; color:#79613f; }
+.clock-foot { position:absolute; top:253px; width:12px; height:34px; border:1px solid #4d3021; border-radius:3px; background:linear-gradient(90deg,#d39b60,#77492c); }.foot-left { left:34px; transform:rotate(29deg); }.foot-right { right:31px; transform:rotate(-29deg); }
+.clock-controls { position:relative; margin:31px auto 0; width:214px; text-align:center; padding:10px 8px 7px; border:1px solid #7a6244; border-radius:6px; background:linear-gradient(#dcc9a2,#c6ad80); box-shadow:0 3px #6b5133; -webkit-app-region:no-drag; }
+.timer-tabs { display:flex; justify-content:space-around; gap:4px; margin-bottom:8px; }.timer-tabs button { font-size:5px; padding:6px; color:#6d5738; border-bottom:1px solid transparent; }.timer-tabs button[aria-pressed=true] { color:#8f3025; border-bottom-color:#8f3025; }
+.timer-actions { display:flex; align-items:center; justify-content:center; gap:9px; }.timer-actions button { border:1px solid #8b7150; background:#efdfb9; border-radius:3px; height:27px; min-width:27px; box-shadow:0 2px #9b7e56; }
+#timer-start { font-size:6px; min-width:83px; }#timer-reset { font-size:17px; }#timer-settings { font-size:17px; }
+#timer-state { display:block; font-size:4px; margin-top:10px; line-height:1.7; color:#6b5335; }
+#pomodoro.finished .clock-bell { animation:bell-ring .13s steps(2) 12; }
+@keyframes bell-ring { 50% { translate:2px 0; } }
+.timer-fields { display:grid; gap:12px; }.timer-fields label { display:flex; justify-content:space-between; align-items:center; font-size:6px; line-height:1.8; gap:12px; }.timer-fields input { width:68px; font-family:inherit; font-size:8px; padding:8px 5px; background:#fff3d7; border:1px solid #917956; color:var(--ink); -webkit-app-region:no-drag; }
+#dialog { border-radius:5px; border-color:#6b5236; box-shadow:5px 6px #241c15; }
+#notice { left:22px; width:424px; border-radius:3px; }
+@media(max-height:710px) { #machine { bottom:18px; }.top { height:101px; }.hood-detail { height:48px; }.brand { bottom:14px; }#new-plan { top:53px; }.body { gap:7px; padding-top:8px; padding-bottom:12px; }#keys { gap:6px; padding-top:8px; padding-bottom:6px; }.key { height:23px; }#paper-window,#paper,body.list #paper-window,body.list #paper { max-height:calc(100vh - 379px); }#pomodoro { bottom:40px; } }

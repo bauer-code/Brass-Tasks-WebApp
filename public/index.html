@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eee9de">
+  <meta name="description" content="A little room for focused work. Markdown plans, a vintage typewriter, and a Pomodoro clock.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Brass &amp; Tasks — Your quiet workspace</title>
+  <link rel="icon" href="assets/typewriter.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="vintage.css">
+  <link rel="stylesheet" href="web.css">
+  <script src="model.js" defer></script><script src="pomodoro.js" defer></script><script src="sound.js" defer></script><script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#paper">Skip to your tasks</a>
+  <header class="site-header">
+    <a class="wordmark" href="./"><img src="assets/typewriter.svg" alt="" width="42" height="42"><span>Brass <i>&amp;</i> Tasks<small>THE WEB EDITION</small></span></a>
+    <nav aria-label="Workspace"><button class="nav-button selected" id="desk-tab">Workspace</button><button class="nav-button" id="history-button">Session journal</button></nav>
+    <button class="utility" id="help-button" aria-label="About this workspace">?</button>
+  </header>
+  <main class="layout">
+    <aside class="library" aria-label="Your plans">
+      <div class="library-heading"><span class="eyebrow">YOUR NOTEBOOK</span><span class="small-mark">01 /</span></div>
+      <button class="primary new-button" id="create-button"><span>＋</span> New plan</button>
+      <label class="search-label"><span aria-hidden="true">⌕</span><input id="plan-search" type="search" placeholder="Find a plan…" aria-label="Find a plan"></label>
+      <div class="library-label"><span>ON YOUR DESK</span><span id="plan-count">0</span></div>
+      <div id="plan-list"></div>
+      <button class="text-button archive-toggle" id="archive-toggle" aria-expanded="false">Show archived plans</button>
+      <div class="library-bottom"><button class="text-button" id="import-button">↥ &nbsp; Import Markdown</button><button class="text-button" id="paste-button">▤ &nbsp; Paste a plan</button><div class="rule"></div><button class="text-button" id="backup-button">↓ &nbsp; Back up workspace</button><button class="text-button subtle" id="restore-button">↥ &nbsp; Restore backup</button><p class="local-note"><span class="save-dot"></span> Saved in this browser<small>Your words stay on your device.</small></p></div>
+    </aside>
+    <section class="workspace-panel" aria-labelledby="workspace-heading">
+      <div class="workspace-intro"><div><p class="eyebrow" id="today-label">A LITTLE ROOM FOR FOCUS</p><h1 id="workspace-heading">One thing at a time.</h1><p>Set a small intention. Give it your attention.</p></div><span class="edition-stamp" aria-hidden="true">B&amp;T<br><small>EST. 2026</small></span></div>
+      <div class="workspace-toolbar"><div class="view-toggle" aria-label="Task view"><button id="list-view" aria-pressed="true">Full page</button><button id="focus-view" aria-pressed="false">Focus</button></div><span id="save-state" role="status">Ready when you are</span><button class="icon-button" id="export-button" title="Download current plan" aria-label="Download current plan">↓</button><button class="icon-button" id="plan-menu" title="Plan actions" aria-label="Plan actions">•••</button></div>
+      <div class="desk-scene">
+        <div class="typewriter-area">
+          <section id="machine" aria-label="Your task typewriter">
+            <div id="paper-window"><article id="paper" tabindex="-1" aria-label="Plan checklist"></article></div>
+            <div class="top"><div class="roller"></div><div class="slot"></div><span class="roller-knob left"></span><span class="roller-knob right"></span><div class="hood-detail" aria-hidden="true"><svg viewBox="0 0 260 64"><path class="fan-bed" d="M12 9 Q130 100 248 9 L205 4 Q130 55 55 4Z"/><g id="typebars"></g><path class="type-guide" d="M120 24L130 8L140 24M130 8V37"/></svg></div><span class="brand">Brass &amp; Tasks</span><button id="new-plan" aria-label="Create a new plan" title="Create a new plan">＋</button></div>
+            <div class="body"><div class="status"><button id="machine-import" aria-label="Import Markdown" title="Import Markdown">＋</button><span id="progress">A fresh page awaits</span><button id="sound" aria-label="Mute all sounds" title="Mute all sounds">♪</button></div><div id="keys" aria-hidden="true"></div><div class="signature">BRASS &amp; TASKS <span>✦</span> ONE THING AT A TIME</div></div><div class="feet" aria-hidden="true"><i></i><i></i></div>
+          </section>
+          <div class="under-machine"><span id="task-summary">Make space for what matters.</span><button class="text-button" id="finish-button">Close this session ↗</button></div>
+        </div>
+        <aside class="focus-corner" aria-label="Pomodoro timer">
+          <span class="eyebrow">YOUR FOCUS COMPANION</span>
+          <div id="pomodoro"><div class="clock-handle"></div><div class="clock-bell bell-left"></div><div class="clock-bell bell-right"></div><div class="clock-hammer"></div><div class="clock-case"><div class="clock-face"><svg id="clock-dial" viewBox="0 0 200 200" aria-hidden="true"><g id="clock-ticks"></g><g id="clock-numbers"></g></svg><span id="timer-mode">FOCUS</span><output id="timer-time" aria-label="Elapsed focus time">00:00</output><span id="timer-target">OF 25 MIN</span><svg id="clock-hands" viewBox="0 0 200 200" aria-hidden="true"><line id="clock-hand" x1="100" y1="100" x2="100" y2="33"/><circle cx="100" cy="100" r="5" class="clock-pin"/></svg></div></div><span class="clock-foot foot-left"></span><span class="clock-foot foot-right"></span></div>
+          <div class="web-clock-controls"><div class="timer-tabs" aria-label="Timer mode"><button data-mode="work" aria-pressed="true">Focus</button><button data-mode="short" aria-pressed="false">Short break</button><button data-mode="long" aria-pressed="false">Long break</button></div><div class="timer-actions"><button id="timer-reset" aria-label="Reset timer" title="Reset timer">↺</button><button id="timer-start" class="primary">Start focus</button><button id="timer-settings" aria-label="Timer settings" title="Timer settings">⚙</button></div><p id="timer-state" role="status">No rush. Just begin.</p><div class="session-dots" id="session-dots" aria-label="Completed focus sessions"></div><div class="audio-options"><button id="tick-toggle" aria-pressed="false">Ticking off</button><span>·</span><button id="bell-toggle" aria-pressed="true">Bell on</button><span>·</span><button id="digital-toggle" aria-pressed="true">Digits on</button></div></div>
+          <div class="desk-note"><span>A NOTE TO SELF</span><p>“You don’t have to do it all.<br>Just the next little thing.”</p><span class="note-star">✳</span></div>
+        </aside>
+      </div>
+      <footer class="workspace-footer"><span><span class="save-dot"></span> A quieter corner of the internet.</span><span>Markdown in. Clarity out.</span></footer>
+    </section>
+  </main>
+  <input type="file" id="markdown-file" accept=".md,.markdown,text/markdown,text/plain" hidden><input type="file" id="backup-file" accept=".json,application/json" hidden>
+  <div id="drop-overlay" hidden>Drop a Markdown plan here<span>Your current plan will stay saved.</span></div>
+  <dialog id="modal" aria-labelledby="modal-title"><form id="modal-form"><div class="modal-heading"><span class="eyebrow">BRASS &amp; TASKS</span><button type="button" class="icon-button" id="modal-close" aria-label="Close dialog">×</button></div><h2 id="modal-title"></h2><div id="modal-content"></div><p id="modal-error" role="alert"></p><div id="modal-actions"></div></form></dialog>
+  <div id="toast" role="status" hidden></div>
+  <noscript>This workspace needs JavaScript to save plans and run the timer. Please enable it in your browser.</noscript>
+</body></html>

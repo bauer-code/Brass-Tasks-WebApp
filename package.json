@@ -1,0 +1,13 @@
+{
+  "name": "brass-tasks-webapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A quiet vintage workspace for Markdown tasks and focused work, ready for static hosting.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "node scripts/serve.cjs public",
+    "start": "node scripts/serve.cjs dist",
+    "build": "node scripts/build.cjs",
+    "test": "node --test test/*.test.cjs"
+  }
+}

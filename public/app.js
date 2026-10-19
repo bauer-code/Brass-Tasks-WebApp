@@ -8,6 +8,9 @@ try { const raw = localStorage.getItem(M.KEY); if(raw) state = M.validate(JSON.p
 catch { storageError = 'Saved data could not be read. Export a backup before restoring a valid workspace. Your existing data has not been overwritten.'; }
 let timer = new Pomodoro(state.timer);
 const typeSound = new TypewriterSound(), clockSound = new ClockSound();
+const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+const motion = new BrassMotion(document,motionPreference);
+let renderedPageId, clockAnimation, clockAnimationKey;
 let audioPromise;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimeout); toastTimeout = setTimeout(() => $('#toast').hidden = true, 7000); }
 function mutate(edit) {
@@ -23,7 +26,8 @@ function savePlan(markdown) {
   const completed = M.becameComplete(active().markdown,markdown);
   mutate(next => { const plan = next.plans.find(p => p.id === next.activeId); plan.markdown = markdown; plan.updatedAt = Date.now(); if(completed) M.advanceQuote(next,BrassQuotes.length); });
   render();
-  if(completed) { typeSound.ejectPaper(); toast('Plan complete. A fresh thought for your next chapter.'); }
+  if(completed) { motion.finish(); typeSound.ejectPaper(); toast('Plan complete. A fresh thought for your next chapter.'); }
+  else motion.carriage();
   return completed;
 }
 function createPlan(title, markdown = '', kind = 'plan') {
@@ -191,11 +195,16 @@ function renderPaper() {
     editor.oninput = () => run(() => {
       mutate(next => { const note = next.plans.find(p => p.id === plan.id); note.markdown = editor.value; note.updatedAt = Date.now(); });
     });
+    editor.addEventListener('input',event => {
+      if(event.isComposing) return;
+      if(event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') motion.strike('\n');
+      else if(event.inputType === 'insertText' && event.data) motion.strike([...event.data].at(-1));
+    });
     const actions = node('div','note-page-actions');
     const finish = button(plan.finishedAt ? 'Edit note' : 'Finish note ✓',() => run(() => {
       mutate(next => { const note = next.plans.find(p => p.id === plan.id); if(note.finishedAt) delete note.finishedAt; else { note.markdown = editor.value; note.finishedAt = Date.now(); } note.updatedAt = Date.now(); });
       render();
-      if(active().finishedAt) { toast('Note finished. Find it in Notes at the top.'); $('#note-finish').focus(); }
+      if(active().finishedAt) { motion.finish(); toast('Note finished. Find it in Notes at the top.'); $('#note-finish').focus(); }
       else $('#note-editor').focus();
     }),'note-finish'); finish.id = 'note-finish';
     actions.append(node('span','',plan.finishedAt ? 'Finished · saved in Notes' : 'Saved as you write'),finish);
@@ -210,7 +219,7 @@ function renderPaper() {
   visible.forEach(task => {
     if(task.section && task.section !== section) paper.append(node('div','section',task.section)); section = task.section;
     const row = node('div','task-item');
-    const toggle = button('', () => run(() => { const completed = savePlan(M.changeTask(active().markdown,task.line,'toggle')); if(!completed) typeSound.play(task.done ? 'key' : 'return'); const nextToggle = document.querySelector(`[data-task-line="${task.line}"]`) || $('.task') || $('.add-task'); nextToggle?.focus({preventScroll:true}); }), 'task' + (task.done ? ' done' : ''));
+    const toggle = button('', () => run(() => { const completed = savePlan(M.changeTask(active().markdown,task.line,'toggle')); if(!completed) typeSound.play(task.done ? 'key' : 'return'); const nextToggle = document.querySelector(`[data-task-line="${task.line}"]`) || $('.task') || $('.add-task'); motion.check(nextToggle,state.preferences.focus && !task.done && !completed); nextToggle?.focus({preventScroll:true}); }), 'task' + (task.done ? ' done' : ''));
     toggle.setAttribute('role','checkbox'); toggle.setAttribute('aria-checked',String(task.done)); toggle.dataset.taskLine = task.line;
     const box = node('span','box'); box.setAttribute('aria-hidden','true'); box.innerHTML = '<svg viewBox="0 0 8 8"><path d="M1 4 L3 6 L7 1"/></svg>';
     toggle.append(box,node('span','task-text',task.text));
@@ -233,7 +242,11 @@ function renderPaper() {
   $('#task-summary').textContent = parsed.tasks.length ? `${parsed.tasks.length - complete} small ${parsed.tasks.length - complete === 1 ? 'step' : 'steps'} to go.` : 'Make space for what matters.';
 }
 function render() {
+  const pageId = active()?.id || null, changedPage = renderedPageId !== undefined && renderedPageId !== pageId;
+  motion.cancel();
   renderLibrary(); renderPaper();
+  if(changedPage) motion.feed();
+  renderedPageId = pageId;
   $('#list-view').setAttribute('aria-pressed', String(!state.preferences.focus)); $('#focus-view').setAttribute('aria-pressed', String(state.preferences.focus));
   applyAudio(); drawTimer(); renderQuote();
 }
@@ -336,7 +349,20 @@ function timerAction(action) {
   catch(error) { timer = new Pomodoro(before); throw error; }
 }
 const modeLabel = {work:'Focus',short:'Short break',long:'Long break'};
+function updateClockHand() {
+  const hand = $('#clock-hand');
+  const key = [timer.running,timer.startedAt,timer.elapsedMs,timer.targetMs,document.hidden,motionPreference.matches].join(':');
+  if(clockAnimation && key === clockAnimationKey) return;
+  clockAnimation?.cancel(); clockAnimation = null; clockAnimationKey = key;
+  const elapsed = timer.elapsed(), transform = `rotate(${elapsed/timer.targetMs*360}deg)`;
+  hand.style.transform = transform;
+  if(timer.running && !document.hidden && !motionPreference.matches && hand.animate && elapsed < timer.targetMs) {
+    clockAnimation = hand.animate([{transform},{transform:'rotate(360deg)'}],{duration:timer.targetMs-elapsed,easing:'linear',fill:'forwards'});
+  }
+}
+motionPreference.addEventListener('change',updateClockHand);
 function drawTimer() {
+  updateClockHand();
   const elapsed = Math.floor(timer.elapsed()/1000); const time = String(Math.floor(elapsed/60)).padStart(2,'0') + ':' + String(elapsed%60).padStart(2,'0');
   $('#timer-time').textContent = time; $('#timer-mode').textContent = modeLabel[timer.mode].toUpperCase(); $('#timer-target').textContent = 'OF ' + timer.settings[timer.mode] + ' MIN';
   $('#timer-start').textContent = timer.completed ? (timer.mode === 'work' ? 'Take a break' : 'Next focus') : timer.running ? 'Pause' : timer.elapsed() > 0 ? 'Resume' : 'Start ' + (timer.mode === 'work' ? 'focus' : 'break');
@@ -344,9 +370,12 @@ function drawTimer() {
   if($('#timer-state').textContent !== status) $('#timer-state').textContent = status;
   document.querySelectorAll('[data-mode]').forEach(btn => btn.setAttribute('aria-pressed',String(btn.dataset.mode === timer.mode)));
   const cycleDone = timer.workCount % 4 || (timer.workCount > 0 && (timer.mode !== 'work' || timer.completed) ? 4 : 0);
-  const dots = $('#session-dots'); dots.replaceChildren(); for(let i = 0;i < 4;i++) dots.append(node('i',i < cycleDone ? 'done' : ''));
   const cycleLabel = `${cycleDone} of 4 focus sessions · long break after 4`;
-  dots.setAttribute('aria-label',cycleLabel); dots.title = cycleLabel; $('#session-progress-label').textContent = cycleLabel;
+  const dots = $('#session-dots');
+  if(dots.dataset.cycle !== cycleLabel) {
+    dots.replaceChildren(); for(let i = 0;i < 4;i++) dots.append(node('i',i < cycleDone ? 'done' : ''));
+    dots.dataset.cycle = cycleLabel; dots.setAttribute('aria-label',cycleLabel); dots.title = cycleLabel; $('#session-progress-label').textContent = cycleLabel;
+  }
   document.title = timer.running ? `${time} · ${modeLabel[timer.mode]} — Brass & Tasks` : 'Brass & Tasks — Your quiet workspace';
 }
 function completeTimer() {
@@ -364,10 +393,8 @@ $('#timer-settings').onclick = () => openModal('Find your own rhythm.', content 
   content.append(node('p','','Durations in whole minutes, from 1 to 180. Saving resets the current timer.'));
   for(const mode of ['work','short','long']) { const input = field(modeLabel[mode], 'duration-' + mode,'number',timer.settings[mode]); input.min = 1; input.max = 180; input.step = 1; input.required = true; }
 }, 'Save settings', () => timerAction(() => timer.configure(Object.fromEntries(['work','short','long'].map(mode => [mode,Number($('#duration-' + mode).value)])))));
-setInterval(() => { completeTimer(); drawTimer(); }, 1000);
-function sweep() { $('#clock-hand').style.transform = `rotate(${timer.elapsed()/timer.targetMs*360}deg)`; requestAnimationFrame(sweep); }
-requestAnimationFrame(sweep);
-document.addEventListener('visibilitychange',() => { if(!document.hidden) { completeTimer(); drawTimer(); } });
+setInterval(() => { completeTimer(); if(!document.hidden) drawTimer(); }, 1000);
+document.addEventListener('visibilitychange',() => { updateClockHand(); if(!document.hidden) { completeTimer(); drawTimer(); } });
 window.addEventListener('storage', event => {
   if(event.key !== M.KEY) return;
   try { state = event.newValue ? M.validate(JSON.parse(event.newValue)) : M.fresh(); timer = new Pomodoro(state.timer); storageError = ''; clockSound.stopAlarm(); if($('#modal').open) closeModal(); render(); toast('Workspace refreshed from another tab.'); }

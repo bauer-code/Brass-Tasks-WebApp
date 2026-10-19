@@ -25,6 +25,7 @@ npm start
 ## What works
 
 - Responsive workspace with the original vintage typewriter, brass analog clock, bundled font, and recorded mechanical clock audio.
+- Desktop-inspired stepped paper feeds, brief visible-row reveals, moving keycaps and typing mechanism, carriage returns while writing notes, checkmark feedback, and a finished-sheet lift. Effects never delay editing or storage, cancel on navigation or hidden tabs, and respect reduced motion. Page feeds animate at most eight visible rows; the clock uses a native browser animation only while running and visible, with no perpetual JavaScript frame loop.
 - Multiple plans, title search, rename, archive, restore from archive, and deletion with confirmation.
 - Add note on the typewriter creates a freeform note page. Notes save as you write; Finish note marks a page finished, with Edit note available to continue. The top Notes tab collects drafts, finished notes, and archived notes, with individual Markdown downloads and a combined download of all notes.
 - The notebook holds task lists, with subtle archive and delete icons and a Download all task lists button. Bulk downloads combine all pages of the selected type, including archived pages, into one `.md` file. Notes and plans support rename, archive/restore, deletion, and workspace backups.

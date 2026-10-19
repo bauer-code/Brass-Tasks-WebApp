@@ -2,7 +2,7 @@
 
 ## Automated checks
 
-`npm test`: **15 passing tests** covering:
+`npm test`: **19 passing tests** covering:
 
 - Markdown extraction with YAML frontmatter, fenced code, nested tasks, numbered tasks, and sections.
 - Checkbox toggles, edits, and removals preserving prose, prefixes, and CRLF line endings.
@@ -14,6 +14,7 @@
 - Exactly 200 unique sourced quote records, full-cycle rotation, and compatibility with backups created before quotes were added.
 - Note storage and backup roundtrips, title/body Markdown export, renamed and empty notes, unchanged legacy-plan exports, and rejection of invalid page types.
 - Bulk exports separate notes from task lists, include archived pages and legacy plans, preserve page text, and retain validated note completion timestamps in backups.
+- Animation lifecycle: bounded work for 200-row lists, rapid repeated key strikes, cleanup without cancelling newer effects, reduced-motion changes, hidden tabs, and unsupported animation APIs.
 
 `node --check public/app.js` passed. `npm run build` produced the static deployable files successfully.
 
@@ -41,6 +42,8 @@ Note pages were checked on the isolated port 4182 preview: creation from both no
 ## Limits
 
 Latest notebook update: checked subtle archive/delete controls, archiving and restoring a task list, finishing a note and retaining its read-only state after reload, reopening it for editing, and the top Notes library. Archived notes remained available for download and restoration. Both bulk Markdown downloads were opened from disk and verified against the synthetic pages. Desktop and 390-pixel mobile layouts had no horizontal overflow; no browser errors or warnings were recorded. Screenshots: [notebook and finished note](notebook-preview.jpg), [Notes library](notes-library-preview.jpg).
+
+Animation update: inspected the desktop Git revision `f23aab4` and current source read-only. Adapted its stepped feeds, key strikes, carriage motion, check feedback, and finished-sheet movement. Browser checks on port 4182 confirmed an active stepped paper transform, all 200 imported tasks immediately available, safe rapid switching, readable completion text, editable notes, and a running clock that pauses and resets correctly. Paper transforms returned to `none` after effects. Checked a 390-pixel phone layout without horizontal overflow and no console errors/warnings. Reduced motion and hidden-tab cancellation were verified with lifecycle tests; no hardware frame-rate benchmark was performed. Screenshot: [animation preview](motion-preview.jpg).
 
 - Backup validation and storage failure handling were tested at the model layer; a complete file-picker backup restoration roundtrip was not browser-tested.
 - Physical speaker output, Safari, Firefox, installed standalone mode, and Hostinger production behavior were not verified in this environment.

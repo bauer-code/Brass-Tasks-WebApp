@@ -60,6 +60,48 @@ function newPlanDialog() { openModal('A fresh page.', () => { const input = fiel
 function newNoteDialog() {
   openModal('A page for your thoughts.', () => { const input = field('Note title','note-title'); input.placeholder = 'Thoughts worth keeping'; input.maxLength = 120; input.required = true; }, 'Create note', () => createPlan($('#note-title').value, '', 'note'));
 }
+function archivePage(page) {
+  mutate(next => {
+    next.plans.find(p => p.id === page.id).status = 'archived';
+    if(next.activeId === page.id) next.activeId = next.plans.find(p => p.status === 'active' && p.kind !== 'note')?.id || null;
+  });
+  render(); toast(page.kind === 'note' ? 'Note archived. Find it in Notes.' : 'Plan archived.');
+}
+function pageIcon(action, label, handler) {
+  const control = button('', handler, 'page-action ' + action);
+  control.setAttribute('aria-label',label); control.title = label;
+  const paths = {delete:'M4 5h12M7 5V3h6v2M6 7l1 10h6l1-10M9 8v6M11 8v6',archive:'M3 3h14v4H3zM5 7v10h10V7M8 10h4',download:'M10 3v9M6 9l4 4 4-4M4 14v3h12v-3'};
+  control.innerHTML = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="${paths[action]}"/></svg>`;
+  return control;
+}
+function downloadAll(kind) {
+  const pages = state.plans.filter(p => (p.kind === 'note' ? 'note' : 'plan') === kind);
+  if(!pages.length) return toast(kind === 'note' ? 'Create a note first.' : 'Create a plan first.');
+  download(kind === 'note' ? 'brass-tasks-notes.md' : 'brass-tasks-lists.md',M.exportCollection(pages,kind));
+}
+function notesDialog() {
+  openModal('Your notes.', content => {
+    const toolbar = node('div','notes-toolbar');
+    toolbar.append(button('Add note',newNoteDialog,'secondary'),button('Download all notes',() => downloadAll('note'),'secondary'));
+    content.append(toolbar,node('p','notes-hint','All your notes, including drafts and archived pages. Downloads are Markdown files.'));
+    const notes = state.plans.filter(p => p.kind === 'note');
+    if(!notes.length) content.append(node('p','','A fresh page is waiting for your thoughts.'));
+    for(const note of notes) {
+      const card = node('article','saved-note');
+      card.append(node('h3','',note.title),node('small','',note.status === 'archived' ? 'Archived' : note.finishedAt ? 'Finished' : 'Draft'));
+      const actions = node('div','saved-note-actions');
+      actions.append(button(note.status === 'archived' ? 'Restore & open' : 'Open note',() => run(() => {
+        mutate(next => { next.plans.find(p => p.id === note.id).status = 'active'; next.activeId = note.id; });
+        render(); closeModal(); $('#paper').focus();
+      }),'text-button'));
+      actions.append(pageIcon('download','Download note: ' + note.title,() => download(filename(note.title) + '.md',M.exportMarkdown(note))));
+      if(note.status !== 'archived') actions.append(pageIcon('archive','Archive note: ' + note.title,() => run(() => { archivePage(note); notesDialog(); })));
+      actions.append(pageIcon('delete','Delete note: ' + note.title,() => deletePlanDialog(note)));
+      card.append(actions); content.append(card);
+    }
+  });
+  $('#modal-actions button').textContent = 'Close';
+}
 function deletePlanDialog(plan) {
   const kind = plan.kind === 'note' ? 'note' : 'plan';
   openModal(`Delete this ${kind}?`, body => body.append(node('p','',`“${plan.title}” will be removed from this browser. Export it first if you want a copy. Journal entries are retained.`)), 'Delete ' + kind, () => {
@@ -104,8 +146,9 @@ function renderQuote() {
 }
 function renderLibrary() {
   const query = $('#plan-search').value.trim().toLowerCase(); const list = $('#plan-list'); list.replaceChildren();
-  const plans = state.plans.filter(p => p.status === (showArchived ? 'archived' : 'active') && p.title.toLowerCase().includes(query));
-  $('#plan-count').textContent = state.plans.filter(p => p.status === 'active').length;
+  const plans = state.plans.filter(p => p.kind !== 'note' && p.status === (showArchived ? 'archived' : 'active') && p.title.toLowerCase().includes(query));
+  $('#plan-count').textContent = state.plans.filter(p => p.kind !== 'note' && p.status === 'active').length;
+  $('#download-plans').disabled = !state.plans.some(p => p.kind !== 'note');
   for(const plan of plans) {
     const kind = plan.kind === 'note' ? 'note' : 'plan';
     const parsed = M.parseMarkdown(plan.markdown);
@@ -117,12 +160,13 @@ function renderLibrary() {
     item.append(node('span','plan-icon','▤'));
     const info = node('span','plan-info'); info.append(node('strong','',plan.title),node('small','',kind === 'note' ? 'Markdown note' : `${parsed.tasks.filter(t => t.done).length} of ${parsed.tasks.length} complete`)); item.append(info);
     const row = node('div','plan-row');
-    const remove = button('Delete', () => deletePlanDialog(plan), 'delete-plan');
-    remove.setAttribute('aria-label', `Delete ${kind}: ` + plan.title); remove.title = `Delete ${kind}: ` + plan.title;
-    row.append(item,remove); list.append(row);
+    const actions = node('div','plan-row-actions');
+    if(!showArchived) actions.append(pageIcon('archive','Archive plan: ' + plan.title,() => run(() => archivePage(plan))));
+    actions.append(pageIcon('delete','Delete plan: ' + plan.title,() => deletePlanDialog(plan)));
+    row.append(item,actions); list.append(row);
   }
-  if(!plans.length) list.append(node('p','library-empty',query ? 'No matching pages.' : showArchived ? 'No archived pages yet.' : 'Your next chapter starts with a fresh page.'));
-  $('#archive-toggle').textContent = showArchived ? 'Back to active pages' : 'Show archived pages'; $('#archive-toggle').setAttribute('aria-expanded', String(showArchived));
+  if(!plans.length) list.append(node('p','library-empty',query ? 'No matching plans.' : showArchived ? 'No archived plans yet.' : 'Your next chapter starts with a fresh page.'));
+  $('#archive-toggle').textContent = showArchived ? 'Back to active plans' : 'Show archived plans'; $('#archive-toggle').setAttribute('aria-expanded', String(showArchived));
 }
 function renderPaper() {
   const paper = $('#paper'), scroll = paper.scrollTop; paper.replaceChildren(); const plan = active();
@@ -142,11 +186,20 @@ function renderPaper() {
   if(isNote) {
     paper.append(node('div','paper-kicker','A PAGE FOR YOUR THOUGHTS'),node('h2','paper-title',plan.title));
     const editor = node('textarea','note-editor'); editor.id = 'note-editor'; editor.value = plan.markdown; editor.maxLength = 2000000;
+    editor.readOnly = Boolean(plan.finishedAt);
     editor.setAttribute('aria-label','Write your note'); editor.placeholder = 'Let your thoughts find their way onto the page…';
     editor.oninput = () => run(() => {
       mutate(next => { const note = next.plans.find(p => p.id === plan.id); note.markdown = editor.value; note.updatedAt = Date.now(); });
     });
-    paper.append(editor); $('#progress').textContent = 'Your note · saved as you write';
+    const actions = node('div','note-page-actions');
+    const finish = button(plan.finishedAt ? 'Edit note' : 'Finish note ✓',() => run(() => {
+      mutate(next => { const note = next.plans.find(p => p.id === plan.id); if(note.finishedAt) delete note.finishedAt; else { note.markdown = editor.value; note.finishedAt = Date.now(); } note.updatedAt = Date.now(); });
+      render();
+      if(active().finishedAt) { toast('Note finished. Find it in Notes at the top.'); $('#note-finish').focus(); }
+      else $('#note-editor').focus();
+    }),'note-finish'); finish.id = 'note-finish';
+    actions.append(node('span','',plan.finishedAt ? 'Finished · saved in Notes' : 'Saved as you write'),finish);
+    paper.append(editor,actions); $('#progress').textContent = plan.finishedAt ? 'Your note · finished' : 'Your note · saved as you write';
     $('#task-summary').textContent = 'Your words, ready to take with you.'; return;
   }
   const parsed = M.parseMarkdown(plan.markdown), complete = parsed.tasks.filter(task => task.done).length;
@@ -197,7 +250,9 @@ function importText(markdown, fallback = 'Imported plan') {
 async function importFile(file) { if(!file) return; if(!/\.(md|markdown)$/i.test(file.name)) throw Error('Choose a .md or .markdown file.'); if(file.size > 2000000) throw Error('Choose a Markdown file smaller than 2 MB.'); importText(await file.text(),file.name.replace(/\.(md|markdown)$/i,'')); }
 function pasteDialog() { openModal('Bring your plan along.', () => { const area = field('Paste your Markdown', 'markdown-input', 'textarea'); area.placeholder = '# A good day\n\n## First things first\n- [ ] One small thing\n- [ ] Another small thing'; area.required = true; $('#modal-content').append(node('p','','Checkbox tasks, headings, and your original text are kept when exported.')); }, 'Import plan', () => importText($('#markdown-input').value)); }
 $('#create-button').onclick = $('#new-plan').onclick = newPlanDialog;
-$('#create-note').onclick = $('#new-note').onclick = newNoteDialog;
+$('#new-note').onclick = newNoteDialog;
+$('#notes-button').onclick = notesDialog;
+$('#download-plans').onclick = () => downloadAll('plan');
 $('#import-button').onclick = $('#machine-import').onclick = () => $('#markdown-file').click();
 $('#paste-button').onclick = pasteDialog;
 $('#markdown-file').onchange = async event => { try { await importFile(event.target.files[0]); } catch(error) { toast(error.message); } event.target.value = ''; };

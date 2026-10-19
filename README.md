@@ -26,7 +26,8 @@ npm start
 
 - Responsive workspace with the original vintage typewriter, brass analog clock, bundled font, and recorded mechanical clock audio.
 - Multiple plans, title search, rename, archive, restore from archive, and deletion with confirmation.
-- Add note buttons beside New plan and on the typewriter create freeform note pages. Notes save as you write, support Markdown text, and download as `.md` files with the note title. Notes share search, rename, archive, deletion, and workspace backups with plans.
+- Add note on the typewriter creates a freeform note page. Notes save as you write; Finish note marks a page finished, with Edit note available to continue. The top Notes tab collects drafts, finished notes, and archived notes, with individual Markdown downloads and a combined download of all notes.
+- The notebook holds task lists, with subtle archive and delete icons and a Download all task lists button. Bulk downloads combine all pages of the selected type, including archived pages, into one `.md` file. Notes and plans support rename, archive/restore, deletion, and workspace backups.
 - Create, edit, complete, uncheck, and remove tasks; undo the most recent removal before the plan changes again.
 - Bulk add up to 200 tasks at once: one per line, with optional bullets, numbering, or Markdown checkboxes. The entire batch is validated before saving; every added task starts unchecked.
 - Full-page and one-task focus views.

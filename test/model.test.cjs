@@ -46,3 +46,22 @@ test('notes survive storage and backup validation without changing existing plan
   assert.equal(M.exportMarkdown({...note,markdown:''}),'# Reading notes\n\n');
   assert.throws(()=>M.validate({...M.fresh(),plans:[{...note,kind:'unknown'}]}),/page type/);
 });
+
+test('bulk Markdown downloads separate notes and task lists and include archived pages', () => {
+  const pages = [
+    {id:'1',title:'Today',markdown:'# Today\n- [ ] First\n',status:'active'},
+    {id:'2',kind:'note',title:'Ideas',markdown:'A thought.\n## Details\nKeep this heading.',status:'active',finishedAt:123},
+    {id:'3',kind:'plan',title:'Yesterday',markdown:'- [x] Done\n',status:'archived'},
+    {id:'4',kind:'note',title:'Old note',markdown:'Older thoughts.',status:'archived'}
+  ];
+  const plans = M.exportCollection(pages,'plan'), notes = M.exportCollection(pages,'note');
+  assert.ok(plans.startsWith('# All task lists\n\n'));
+  assert.ok(plans.includes('# Today\n- [ ] First\n'));
+  assert.ok(plans.includes('# Yesterday\n\n- [x] Done\n'));
+  assert.ok(!plans.includes('A thought.'));
+  assert.ok(notes.includes('# Ideas\n\nA thought.\n## Details\nKeep this heading.'));
+  assert.ok(notes.includes('# Old note\n\nOlder thoughts.'));
+  assert.ok(!notes.includes('- [ ] First'));
+  assert.equal(M.validate({...M.fresh(),plans:pages}).plans[1].finishedAt,123);
+  assert.throws(()=>M.validate({...M.fresh(),plans:[{...pages[1],finishedAt:'invalid'}]}),/completion time/);
+});

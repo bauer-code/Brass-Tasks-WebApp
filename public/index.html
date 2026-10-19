@@ -18,18 +18,18 @@
   <a class="skip-link" href="#paper">Skip to your tasks</a>
   <header class="site-header">
     <a class="wordmark" href="./"><img src="assets/typewriter.svg" alt="" width="42" height="42"><span>Brass <i>&amp;</i> Tasks<small>THE WEB EDITION</small></span></a>
-    <nav aria-label="Workspace"><button class="nav-button selected" id="desk-tab">Workspace</button><button class="nav-button" id="history-button">Session journal</button></nav>
+    <nav aria-label="Workspace"><button class="nav-button selected" id="desk-tab">Workspace</button><button class="nav-button" id="notes-button">Notes</button><button class="nav-button" id="history-button">Session journal</button></nav>
     <button class="utility" id="help-button" aria-label="About this workspace">?</button>
   </header>
   <main class="layout">
-    <aside class="library" aria-label="Your plans and notes">
+    <aside class="library" aria-label="Your task notebook">
       <div class="library-heading"><span class="eyebrow">YOUR NOTEBOOK</span><span class="small-mark">01 /</span></div>
-      <div class="page-create-actions"><button class="primary new-button" id="create-note">＋ Add note</button><button class="primary new-button" id="create-button">＋ New plan</button></div>
-      <label class="search-label"><span aria-hidden="true">⌕</span><input id="plan-search" type="search" placeholder="Find a page…" aria-label="Find a page"></label>
+      <button class="primary new-button" id="create-button">＋ New plan</button>
+      <label class="search-label"><span aria-hidden="true">⌕</span><input id="plan-search" type="search" placeholder="Find a plan…" aria-label="Find a plan"></label>
       <div class="library-label"><span>ON YOUR DESK</span><span id="plan-count">0</span></div>
       <div id="plan-list"></div>
       <button class="text-button archive-toggle" id="archive-toggle" aria-expanded="false">Show archived plans</button>
-      <div class="library-bottom"><button class="text-button" id="import-button">↥ &nbsp; Import Markdown</button><button class="text-button" id="paste-button">▤ &nbsp; Paste a plan</button><div class="rule"></div><button class="text-button" id="backup-button">↓ &nbsp; Back up workspace</button><button class="text-button subtle" id="restore-button">↥ &nbsp; Restore backup</button><p class="local-note"><span class="save-dot"></span> Saved in this browser<small>Your words stay on your device.</small></p></div>
+      <div class="library-bottom"><button class="text-button" id="download-plans" title="Download every active and archived task list in one Markdown file">↓ &nbsp; Download all task lists</button><button class="text-button" id="import-button">↥ &nbsp; Import Markdown</button><button class="text-button" id="paste-button">▤ &nbsp; Paste a plan</button><div class="rule"></div><button class="text-button" id="backup-button">↓ &nbsp; Back up workspace</button><button class="text-button subtle" id="restore-button">↥ &nbsp; Restore backup</button><p class="local-note"><span class="save-dot"></span> Saved in this browser<small>Your words stay on your device.</small></p></div>
     </aside>
     <section class="workspace-panel" aria-labelledby="workspace-heading">
       <div class="workspace-intro"><div><p class="eyebrow" id="today-label">ROOM FOR FOCUS</p><h1 id="workspace-heading">One thing at a time.</h1><p>Set a small intention. Give it your attention.</p></div><span class="edition-stamp" aria-hidden="true">B&amp;T<br><small>EST. 2026</small></span></div>

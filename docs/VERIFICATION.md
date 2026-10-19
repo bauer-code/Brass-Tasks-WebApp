@@ -1,8 +1,8 @@
-# Verification — 18 October 2026
+# Verification — updated 19 October 2026
 
 ## Automated checks
 
-`npm test`: **14 passing tests** covering:
+`npm test`: **15 passing tests** covering:
 
 - Markdown extraction with YAML frontmatter, fenced code, nested tasks, numbered tasks, and sections.
 - Checkbox toggles, edits, and removals preserving prose, prefixes, and CRLF line endings.
@@ -13,6 +13,7 @@
 - Completion transitions, including no completion for empty lists or repeated renders.
 - Exactly 200 unique sourced quote records, full-cycle rotation, and compatibility with backups created before quotes were added.
 - Note storage and backup roundtrips, title/body Markdown export, renamed and empty notes, unchanged legacy-plan exports, and rejection of invalid page types.
+- Bulk exports separate notes from task lists, include archived pages and legacy plans, preserve page text, and retain validated note completion timestamps in backups.
 
 `node --check public/app.js` passed. `npm run build` produced the static deployable files successfully.
 
@@ -38,6 +39,8 @@ Screenshots: [desktop](desktop-preview.jpg), [phone](mobile-preview.jpg). These 
 Note pages were checked on the isolated port 4182 preview: creation from both note buttons, text persistence after reload, rename preserving body headings, Markdown download, archive/restore, and deletion. The downloaded `Afternoon notes.md` was read from disk and contained its title, paragraphs, Markdown headings, list, and accented text. Desktop and 390-pixel mobile layouts had no horizontal overflow or console errors. Screenshot: [note page](notes-preview.jpg).
 
 ## Limits
+
+Latest notebook update: checked subtle archive/delete controls, archiving and restoring a task list, finishing a note and retaining its read-only state after reload, reopening it for editing, and the top Notes library. Archived notes remained available for download and restoration. Both bulk Markdown downloads were opened from disk and verified against the synthetic pages. Desktop and 390-pixel mobile layouts had no horizontal overflow; no browser errors or warnings were recorded. Screenshots: [notebook and finished note](notebook-preview.jpg), [Notes library](notes-library-preview.jpg).
 
 - Backup validation and storage failure handling were tested at the model layer; a complete file-picker backup restoration roundtrip was not browser-tested.
 - Physical speaker output, Safari, Firefox, installed standalone mode, and Hostinger production behavior were not verified in this environment.

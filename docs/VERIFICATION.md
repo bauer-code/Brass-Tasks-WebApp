@@ -30,6 +30,7 @@ The app was served on `http://127.0.0.1:4173` and checked in the in-app browser 
 - Bulk entry reached from the single-task dialog; a mixed bullet/numbered-checkbox batch created two unchecked tasks. The quote stayed at 1/200 after the first completion, changed to 2/200 after the final task, and stayed at 2/200 after reload.
 - The follow-up preview on port 4181 advanced to quote 3/200 after a focus session and retained it after reload. The dots showed 1 of 4 sessions. Settings were restored to 25/5/15 minutes.
 - Confirmed the title “A quote to note” and the completion message “A little progress. A lovely feeling. ✓” on desktop and phone layouts.
+- Plan controls checked on an isolated preview at port 4182: cancel preserves an unfinished plan; confirmation deletes it and shows the empty state; deleting a completed, unselected plan preserves the current selection and persists after reload; archived plans can be deleted directly while their journal entries remain. The dark brown New plan button and visible Delete controls were checked at desktop and 390-pixel phone widths. No console warnings or errors. Screenshot: [plan controls](plan-controls-preview.jpg).
 
 Screenshots: [desktop](desktop-preview.jpg), [phone](mobile-preview.jpg). These screenshots contain synthetic demonstration content; fresh installations start with an empty workspace.
 

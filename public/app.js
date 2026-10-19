@@ -57,6 +57,15 @@ $('#modal-form').onsubmit = async event => {
   finally { if(submit) submit.disabled = false; }
 };
 function newPlanDialog() { openModal('A fresh page.', () => { const input = field('Give your plan a title', 'plan-title'); input.placeholder = 'A good day’s work'; input.maxLength = 120; input.required = true; }, 'Create plan', () => createPlan($('#plan-title').value)); }
+function deletePlanDialog(plan) {
+  openModal('Delete this plan?', body => body.append(node('p','',`“${plan.title}” and its tasks will be removed from this browser. Export it first if you want a copy. Journal entries are retained.`)), 'Delete plan', () => {
+    mutate(next => {
+      next.plans = next.plans.filter(p => p.id !== plan.id);
+      if(next.activeId === plan.id) next.activeId = next.plans.find(p => p.status === 'active')?.id || null;
+    });
+    render(); modalOrigin = $('#create-button'); toast('Plan deleted.');
+  });
+}
 function addTaskDialog(task) {
   if(!active()) return newPlanDialog();
   const id = active().id;
@@ -101,7 +110,11 @@ function renderLibrary() {
     }), 'plan-item' + (plan.id === state.activeId ? ' active' : ''));
     item.setAttribute('aria-current', String(plan.id === state.activeId));
     item.append(node('span','plan-icon','▤'));
-    const info = node('span','plan-info'); info.append(node('strong','',plan.title),node('small','',`${parsed.tasks.filter(t => t.done).length} of ${parsed.tasks.length} complete`)); item.append(info); list.append(item);
+    const info = node('span','plan-info'); info.append(node('strong','',plan.title),node('small','',`${parsed.tasks.filter(t => t.done).length} of ${parsed.tasks.length} complete`)); item.append(info);
+    const row = node('div','plan-row');
+    const remove = button('Delete', () => deletePlanDialog(plan), 'delete-plan');
+    remove.setAttribute('aria-label', 'Delete plan: ' + plan.title); remove.title = 'Delete plan: ' + plan.title;
+    row.append(item,remove); list.append(row);
   }
   if(!plans.length) list.append(node('p','library-empty',query ? 'No matching plans.' : showArchived ? 'No archived plans yet.' : 'Your next chapter starts with a fresh page.'));
   $('#archive-toggle').textContent = showArchived ? 'Back to active plans' : 'Show archived plans'; $('#archive-toggle').setAttribute('aria-expanded', String(showArchived));
@@ -196,7 +209,7 @@ $('#plan-menu').onclick = () => {
       mutate(next => { const item = next.plans.find(p => p.id === plan.id); const oldTitle = M.parseMarkdown(item.markdown).title; item.title = title; if(oldTitle) { let replaced = false; item.markdown = item.markdown.replace(/^#\s+(.+?)\s*#*$/gm,(match,heading) => { if(!replaced && heading === oldTitle) { replaced = true; return '# ' + title; } return match; }); } item.updatedAt = Date.now(); }); render();
     })));
     actions.append(button('Archive plan', () => openModal('Put this plan away?', body => body.append(node('p','','Your plan stays in the archive. You can bring it back whenever you need.')), 'Archive', () => { mutate(next => { next.plans.find(p => p.id === plan.id).status = 'archived'; next.activeId = next.plans.find(p => p.status === 'active')?.id || null; }); render(); })));
-    actions.append(button('Delete plan…', () => openModal('Delete this plan?', body => body.append(node('p','',`“${plan.title}” will be removed from this browser. Export it first if you want a copy. Journal entries are retained.`)), 'Delete plan', () => { mutate(next => { next.plans = next.plans.filter(p => p.id !== plan.id); next.activeId = next.plans.find(p => p.status === 'active')?.id || null; }); render(); })));
+    actions.append(button('Delete plan…', () => deletePlanDialog(plan)));
     content.append(actions);
   });
 };

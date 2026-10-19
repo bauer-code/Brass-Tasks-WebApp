@@ -39,11 +39,12 @@ test('long lists have bounded, finite visual work without altering task content'
 test('rapid typing replaces effects; cancellation callbacks cannot remove a newer effect', async () => {
   const e = environment();
   for(let i=0;i<100;i++) e.motion.strike('é');
-  assert.equal(e.motion.effects.size,2);
+  assert.equal(e.motion.effects.size,1);
+  assert.equal(e.guide.effects.length,0);
   assert.ok(e.cap.effects.slice(0,-1).every(effect=>effect.cancelled));
   await Promise.resolve();
   assert.equal(e.motion.effects.get(e.cap),e.cap.effects.at(-1));
-  e.cap.effects.at(-1).finish(); e.guide.effects.at(-1).finish();
+  e.cap.effects.at(-1).finish();
   await Promise.resolve();
   assert.equal(e.motion.effects.size,0);
   e.motion.destroy();
@@ -74,14 +75,15 @@ test('new renders can cancel every effect and missing animation support is harml
 
 function printingEnvironment(texts) {
   const e = environment(), pending = new Map(); let id = 0;
-  e.motion.schedule = {set(fn){pending.set(++id,fn);return id;},clear(key){pending.delete(key);}};
+  const delays = [];
+  e.motion.schedule = {set(fn,delay){delays.push(delay);pending.set(++id,fn);return id;},clear(key){pending.delete(key);}};
   e.document.createElement = () => ({textContent:'',setAttribute(name,value){this[name]=value;},remove(){this.removed=true;}});
   const elements = texts.map(text => {
     const classes = new Set();
     return {textContent:text,isConnected:true,overlays:[],classList:{add:name=>classes.add(name),remove:name=>classes.delete(name),contains:name=>classes.has(name)},append(overlay){this.overlays.push(overlay);}};
   });
   const step = () => { const [key,fn] = pending.entries().next().value; pending.delete(key); fn(); };
-  return {...e,pending,elements,step};
+  return {...e,pending,elements,step,delays};
 }
 
 test('task printing reveals whole graphemes while retaining the complete accessible text', () => {
@@ -117,8 +119,19 @@ test('bulk printing has one timer, a bounded queue, and completes without changi
   const e = printingEnvironment(Array.from({length:200},()=> 'E'.repeat(500)));
   e.motion.printTasks(e.elements);
   let ticks = 0;
-  while(e.pending.size) { assert.equal(e.pending.size,1); assert.ok(++ticks <= 504); e.step(); }
+  while(e.pending.size) { assert.equal(e.pending.size,1); assert.ok(++ticks <= 248); e.step(); }
   assert.equal(e.elements.filter(el=>el.overlays.length).length,8);
   assert.ok(e.elements.every(el=>el.textContent === 'E'.repeat(500) && !el.classList.contains('task-printing')));
+  e.motion.destroy();
+});
+
+test('desktop rhythm pauses between tasks while the arrow stays stationary', () => {
+  const e = printingEnvironment(['E.','E']);
+  e.motion.printTasks(e.elements);
+  e.step(); assert.equal(e.delays.at(-1),77);
+  e.step(); assert.equal(e.delays.at(-1),260);
+  e.step(); assert.equal(e.pending.size,0);
+  e.motion.feed(); e.motion.strike('E'); e.motion.carriage(); e.motion.finish();
+  assert.equal(e.guide.effects.length,0);
   e.motion.destroy();
 });

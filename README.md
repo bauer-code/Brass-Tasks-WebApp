@@ -25,9 +25,11 @@ npm start
 ## What works
 
 - Responsive workspace with the original vintage typewriter, brass analog clock, bundled font, and recorded mechanical clock audio.
-- Desktop-inspired stepped paper feeds, brief visible-row reveals, moving keycaps and typing mechanism, carriage returns while writing notes, checkmark feedback, and a finished-sheet lift. Effects never delay editing or storage, cancel on navigation or hidden tabs, and respect reduced motion. Page feeds animate at most eight visible rows; the clock uses a native browser animation only while running and visible, with no perpetual JavaScript frame loop.
-- Multiple plans, title search, rename, archive, restore from archive, and deletion with confirmation.
+- Desktop-inspired stepped paper feeds, brief visible-row reveals, moving keycaps, carriage returns while writing notes, checkmark feedback, and a finished-sheet lift. The typewriter arrow stays stationary. Short tasks use the desktop's 77 ms typing rhythm, with punctuation and carriage pauses; longer text uses bounded batches and cached key lookups. Effects never delay editing or storage, cancel on navigation or hidden tabs, and respect reduced motion. Page feeds animate at most eight visible rows; the clock uses a native browser animation only while running and visible, with no perpetual JavaScript frame loop.
+- Multiple plans, title search, rename, archive, restore from archive, and recoverable deletion into Bin.
+- Finished notes and completed task lists reveal Bin, Archive, and Save file targets above the paper. Drag the paper heading to a target or click its button. Archive and Bin keep both page types available for restoration and individual downloads. Save file offers a Markdown download or, in supporting browsers, a save dialog starting at Desktop. Browser permissions determine the final file location.
 - Add note on the typewriter creates a freeform note page. Notes save as you write; Finish note marks a page finished, with Edit note available to continue. The top Notes tab collects drafts, finished notes, and archived notes, with individual Markdown downloads and a combined download of all notes.
+- Notes also appear chronologically in the Session journal alongside focus sessions and reflections. Journal downloads include their current text. Binned notes stay in Bin and workspace backups, outside the journal and bulk note downloads.
 - The notebook holds task lists, with subtle archive and delete icons and a Download all task lists button. Bulk downloads combine all pages of the selected type, including archived pages, into one `.md` file. Notes and plans support rename, archive/restore, deletion, and workspace backups.
 - Create, edit, complete, uncheck, and remove tasks; undo the most recent removal before the plan changes again.
 - After submitting a new task, the full page opens and the typewriter prints it letter by letter with synchronized keys and sound. Text saves immediately; bulk entry animates only visible new tasks with bounded work. Switching views or enabling reduced motion reveals the complete text immediately.
@@ -41,6 +43,7 @@ npm start
 - Finishing a nonempty task list plays a synthesized paper-release, platen-ratchet, and paper-pull sound. It respects the master mute switch and does not replay on reload.
 - Four labeled progress dots count focus sessions toward the next long break.
 - A card with 200 curated highlights from your Readwise PDF. It advances after each completed focus Pomodoro or newly completed task list, saves its position, and visits every quote before repeating. Breaks, pauses, resets, and reloads do not advance it. Full provenance is in [the quote collection](docs/QUOTES.md).
+- The quote card's note icon saves the displayed quote to a new editable note, including author, book, PDF page, and reading location.
 - Browser persistence, cross-tab refresh, stale revision checks, and JSON workspace backups with validated restoration.
 - Keyboard-operable controls, native modal focus handling, visible focus outlines, and reduced-motion support.
 

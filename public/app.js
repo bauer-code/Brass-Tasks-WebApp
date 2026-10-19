@@ -65,21 +65,18 @@ function newNoteDialog() {
   openModal('A page for your thoughts.', () => { const input = field('Note title','note-title'); input.placeholder = 'Thoughts worth keeping'; input.maxLength = 120; input.required = true; }, 'Create note', () => createPlan($('#note-title').value, '', 'note'));
 }
 function archivePage(page) {
-  mutate(next => {
-    next.plans.find(p => p.id === page.id).status = 'archived';
-    if(next.activeId === page.id) next.activeId = next.plans.find(p => p.status === 'active' && p.kind !== 'note')?.id || null;
-  });
+  mutate(next => M.movePage(next,page.id,'archived'));
   render(); toast(page.kind === 'note' ? 'Note archived. Find it in Notes.' : 'Plan archived.');
 }
 function pageIcon(action, label, handler) {
   const control = button('', handler, 'page-action ' + action);
   control.setAttribute('aria-label',label); control.title = label;
-  const paths = {delete:'M4 5h12M7 5V3h6v2M6 7l1 10h6l1-10M9 8v6M11 8v6',archive:'M3 3h14v4H3zM5 7v10h10V7M8 10h4',download:'M10 3v9M6 9l4 4 4-4M4 14v3h12v-3'};
+  const paths = {delete:'M4 5h12M7 5V3h6v2M6 7l1 10h6l1-10M9 8v6M11 8v6',archive:'M3 3h14v4H3zM5 7v10h10V7M8 10h4',download:'M10 3v9M6 9l4 4 4-4M4 14v3h12v-3',folder:'M2 5h6l2 2h8v10H2zM2 5V3h6l2 2h8v2',note:'M4 2h8l4 4v12H4zM12 2v5h4M7 10h6M7 13h6'};
   control.innerHTML = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="${paths[action]}"/></svg>`;
   return control;
 }
 function downloadAll(kind) {
-  const pages = state.plans.filter(p => (p.kind === 'note' ? 'note' : 'plan') === kind);
+  const pages = state.plans.filter(p => p.status !== 'binned' && (p.kind === 'note' ? 'note' : 'plan') === kind);
   if(!pages.length) return toast(kind === 'note' ? 'Create a note first.' : 'Create a plan first.');
   download(kind === 'note' ? 'brass-tasks-notes.md' : 'brass-tasks-lists.md',M.exportCollection(pages,kind));
 }
@@ -88,7 +85,7 @@ function notesDialog() {
     const toolbar = node('div','notes-toolbar');
     toolbar.append(button('Add note',newNoteDialog,'secondary'),button('Download all notes',() => downloadAll('note'),'secondary'));
     content.append(toolbar,node('p','notes-hint','All your notes, including drafts and archived pages. Downloads are Markdown files.'));
-    const notes = state.plans.filter(p => p.kind === 'note');
+    const notes = state.plans.filter(p => p.kind === 'note' && p.status !== 'binned');
     if(!notes.length) content.append(node('p','','A fresh page is waiting for your thoughts.'));
     for(const note of notes) {
       const card = node('article','saved-note');
@@ -108,18 +105,78 @@ function notesDialog() {
 }
 function deletePlanDialog(plan) {
   const kind = plan.kind === 'note' ? 'note' : 'plan';
-  openModal(`Delete this ${kind}?`, body => body.append(node('p','',`“${plan.title}” will be removed from this browser. Export it first if you want a copy. Journal entries are retained.`)), 'Delete ' + kind, () => {
-    mutate(next => {
-      next.plans = next.plans.filter(p => p.id !== plan.id);
-      if(next.activeId === plan.id) next.activeId = next.plans.find(p => p.status === 'active')?.id || null;
-    });
-    render(); modalOrigin = $('#create-button'); toast(kind === 'note' ? 'Note deleted.' : 'Plan deleted.');
+  openModal(`Move this ${kind} to Bin?`, body => body.append(node('p','',`“${plan.title}” will stay in Bin until you restore it. Session reflections are retained.`)), 'Move to Bin', () => binPage(plan));
+}
+function binPage(page) {
+  mutate(next => M.movePage(next,page.id,'binned'));
+  render(); modalOrigin = $('#bin-button'); toast('Page saved in Bin. You can restore it from your notebook.');
+}
+function storedPagesDialog(status) {
+  openModal(status === 'binned' ? 'Your bin.' : 'Your archive.', content => {
+    const pages = state.plans.filter(page => page.status === status);
+    content.append(node('p','',pages.length ? 'Your pages are kept here. Restore a page to bring it back to your desk.' : 'No pages here yet.'));
+    for(const page of pages) {
+      const card = node('article','saved-note'); card.append(node('h3','',page.title),node('small','',page.kind === 'note' ? 'Note' : 'Task list'));
+      const actions = node('div','saved-note-actions');
+      actions.append(button('Restore & open',() => run(() => { mutate(next => M.movePage(next,page.id,'active')); showArchived = false; render(); closeModal(); $('#paper').focus(); }),'text-button'),pageIcon('download','Download: ' + page.title,() => download(filename(page.title) + '.md',M.exportMarkdown(page))));
+      card.append(actions); content.append(card);
+    }
   });
+  $('#modal-actions button').textContent = 'Close';
+}
+function savePageFile(page) {
+  const canChoose = typeof window.showSaveFilePicker === 'function';
+  openModal('Save your page.', content => {
+    content.append(node('p','',canChoose ? 'Save a Markdown copy. Choose Desktop or another folder in the save dialog, or download to your browser’s download folder.' : 'Download a Markdown copy. Your browser chooses the download folder; you can move the file to Desktop.'));
+    if(canChoose) content.append(button('Download Markdown',() => { download(filename(page.title) + '.md',M.exportMarkdown(page)); closeModal(); },'secondary file-download'));
+  },canChoose ? 'Choose folder' : 'Download Markdown',() => writePageFile(page));
+}
+async function writePageFile(page) {
+  const name = filename(page.title) + '.md', markdown = M.exportMarkdown(page);
+  if(!window.showSaveFilePicker) { download(name,markdown); toast('Markdown downloaded. Your browser chooses the folder; move it to Desktop if needed.'); return; }
+  try {
+    const handle = await window.showSaveFilePicker({suggestedName:name,startIn:'desktop',types:[{description:'Markdown note',accept:{'text/markdown':['.md']}}]});
+    const writable = await handle.createWritable(); await writable.write(markdown); await writable.close(); toast('Markdown file saved. Your page is still in your notebook.');
+  } catch(error) {
+    if(error.name === 'AbortError') return;
+    if(error.name === 'SecurityError' || error.name === 'NotAllowedError') {
+      download(name,markdown); toast('Markdown downloaded. Your browser chooses the download folder.');
+    } else toast('Could not save the file. ' + error.message);
+  }
+}
+const pageDragType = 'application/x-brass-page';
+let draggedPageId = null;
+let paperDrag = null;
+function clearPaperDrag() {
+  const drag = paperDrag; paperDrag = null;
+  if(drag) { drag.ghost?.remove(); if($('#paper').hasPointerCapture(drag.pointer)) $('#paper').releasePointerCapture(drag.pointer); }
+  document.querySelectorAll('.drag-over').forEach(element => element.classList.remove('drag-over'));
+}
+function renderPageDestinations() {
+  clearPaperDrag();
+  const page = active(), finished = page && (page.kind === 'note' ? Boolean(page.finishedAt) : M.isComplete(page.markdown));
+  const dock = $('#page-destinations'); dock.replaceChildren(); dock.hidden = !finished;
+  $('#paper').draggable = Boolean(finished); $('#paper').classList.toggle('finished-paper',Boolean(finished));
+  if(!finished) return;
+  dock.append(node('p','destination-hint','Page finished. Drag the paper here, or choose an action.'));
+  const targets = node('div','destination-targets');
+  for(const [icon,label,action] of [['delete','Bin',() => binPage(page)],['archive','Archive',() => archivePage(page)],['folder','Save file',() => savePageFile(page)]]) {
+    const control = pageIcon(icon,label,() => run(action)); control.classList.add('page-destination'); control.append(node('span','',label));
+    control.pageAction = action;
+    control.ondragover = event => { if(draggedPageId === page.id && [...event.dataTransfer.types].includes(pageDragType)) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; control.classList.add('drag-over'); } };
+    control.ondragleave = () => control.classList.remove('drag-over');
+    control.ondrop = event => {
+      if(draggedPageId !== page.id || event.dataTransfer.getData(pageDragType) !== page.id) return;
+      event.preventDefault(); event.stopPropagation(); draggedPageId = null; control.classList.remove('drag-over'); run(action);
+    };
+    targets.append(control);
+  }
+  dock.append(targets);
 }
 function addTaskDialog(task) {
   if(!active()) return newPlanDialog();
   const id = active().id;
-  openModal(task ? 'Refine your task.' : 'What’s the next small thing?', content => { const input = field('Task', 'task-text', 'text', task?.text || ''); input.maxLength = 500; input.required = true; input.placeholder = 'Something you can actually do'; if(!task) content.append(button('Add multiple tasks instead',bulkTaskDialog,'text-button')); }, task ? 'Save task' : 'Add task', () => {
+  openModal(task ? 'Refine your task.' : 'What’s the next small thing?', content => { const input = field('Task', 'task-text', 'text', task?.text || ''); input.maxLength = 500; input.required = true; input.placeholder = 'The next step'; if(!task) content.append(button('Add multiple tasks instead',bulkTaskDialog,'text-button')); }, task ? 'Save task' : 'Add task', () => {
     if(active()?.id !== id) throw Error('The active plan changed. Open this dialog again.');
     const previousCount = M.parseMarkdown(active().markdown).tasks.length;
     const markdown = task ? M.changeTask(active().markdown, task.line, 'edit', $('#task-text').value) : M.addTask(active().markdown, $('#task-text').value);
@@ -165,7 +222,7 @@ function renderLibrary() {
   const query = $('#plan-search').value.trim().toLowerCase(); const list = $('#plan-list'); list.replaceChildren();
   const plans = state.plans.filter(p => p.kind !== 'note' && p.status === (showArchived ? 'archived' : 'active') && p.title.toLowerCase().includes(query));
   $('#plan-count').textContent = state.plans.filter(p => p.kind !== 'note' && p.status === 'active').length;
-  $('#download-plans').disabled = !state.plans.some(p => p.kind !== 'note');
+  $('#download-plans').disabled = !state.plans.some(p => p.kind !== 'note' && p.status !== 'binned');
   for(const plan of plans) {
     const kind = plan.kind === 'note' ? 'note' : 'plan';
     const parsed = M.parseMarkdown(plan.markdown);
@@ -257,7 +314,7 @@ function renderPaper() {
 function render() {
   const pageId = active()?.id || null, changedPage = renderedPageId !== undefined && renderedPageId !== pageId;
   motion.cancel();
-  renderLibrary(); renderPaper();
+  renderLibrary(); renderPaper(); renderPageDestinations();
   if(changedPage) motion.feed();
   renderedPageId = pageId;
   $('#list-view').setAttribute('aria-pressed', String(!state.preferences.focus)); $('#focus-view').setAttribute('aria-pressed', String(state.preferences.focus));
@@ -278,6 +335,13 @@ function pasteDialog() { openModal('Bring your plan along.', () => { const area 
 $('#create-button').onclick = $('#new-plan').onclick = newPlanDialog;
 $('#new-note').onclick = newNoteDialog;
 $('#notes-button').onclick = notesDialog;
+$('#bin-button').onclick = () => storedPagesDialog('binned');
+$('#archive-pages-button').onclick = () => storedPagesDialog('archived');
+$('#quote-save').append(pageIcon('note','Save quote to a new note',() => run(() => {
+  const quote = BrassQuotes[state.quoteIndex || 0];
+  createPlan(('A quote to note — ' + quote.book).slice(0,120),M.quoteMarkdown(quote),'note');
+  toast('Quote saved as a new note, with its source.'); $('#note-editor').focus();
+})));
 $('#download-plans').onclick = () => downloadAll('plan');
 $('#import-button').onclick = $('#machine-import').onclick = () => $('#markdown-file').click();
 $('#paste-button').onclick = pasteDialog;
@@ -327,10 +391,19 @@ $('#finish-button').onclick = () => {
   });
 };
 $('#history-button').onclick = () => openModal('Your session journal.', content => {
-  if(!state.sessions.length) content.append(node('p','','Your finished focus sessions and end-of-plan reflections will appear here. Every small step counts.'));
+  const entries = M.journalEntries(state);
+  if(!entries.length) content.append(node('p','','Your notes, finished focus sessions, and end-of-plan reflections will appear here. Every small step counts.'));
   else {
-    content.append(button('Download journal', () => download('brass-tasks-journal.md','# Session journal\n\n' + state.sessions.map(entry => `## ${entry.title}\n${new Date(entry.at).toLocaleString()}\n\n${entry.note}\n`).join('\n')), 'text-button'));
-    state.sessions.forEach(entry => { const item = node('article','journal-entry'); item.append(node('small','',new Date(entry.at).toLocaleString()),node('h3','',entry.title),node('p','',entry.note)); content.append(item); });
+    content.append(button('Download journal', () => download('brass-tasks-journal.md','# Session journal\n\n' + entries.map(entry => `## ${entry.title}\n${new Date(entry.at).toLocaleString()} · ${entry.label || 'Session'}\n\n${entry.note}\n`).join('\n')), 'text-button'));
+    entries.forEach(entry => {
+      const item = node('article','journal-entry'); item.append(node('small','',`${new Date(entry.at).toLocaleString()} · ${entry.label || 'Session'}`),node('h3','',entry.title),node('p','',entry.note));
+      if(entry.pageId) {
+        const page = state.plans.find(page => page.id === entry.pageId), actions = node('div','saved-note-actions');
+        actions.append(button(page.status === 'archived' ? 'Restore & open note' : 'Open note',() => run(() => { mutate(next => M.movePage(next,page.id,'active')); render(); closeModal(); $('#paper').focus(); }),'text-button'),pageIcon('download','Download note: ' + page.title,() => download(filename(page.title) + '.md',M.exportMarkdown(page))));
+        item.append(actions);
+      }
+      content.append(item);
+    });
   }
 });
 $('#desk-tab').onclick = () => { closeModal(); $('#paper').focus(); };
@@ -417,7 +490,38 @@ let dragDepth = 0;
 document.addEventListener('dragenter',event => { if([...event.dataTransfer.types].includes('Files')) { event.preventDefault(); dragDepth++; $('#drop-overlay').hidden = false; } });
 document.addEventListener('dragover',event => { if([...event.dataTransfer.types].includes('Files')) event.preventDefault(); });
 document.addEventListener('dragleave',() => { if(--dragDepth <= 0) { dragDepth = 0; $('#drop-overlay').hidden = true; } });
-document.addEventListener('drop',async event => { event.preventDefault(); dragDepth = 0; $('#drop-overlay').hidden = true; try { if(event.dataTransfer.files.length !== 1) throw Error('Drop one Markdown file at a time.'); await importFile(event.dataTransfer.files[0]); } catch(error) { toast(error.message); } });
+document.addEventListener('drop',async event => { if(![...event.dataTransfer.types].includes('Files')) return; event.preventDefault(); dragDepth = 0; $('#drop-overlay').hidden = true; try { if(event.dataTransfer.files.length !== 1) throw Error('Drop one Markdown file at a time.'); await importFile(event.dataTransfer.files[0]); } catch(error) { toast(error.message); } });
+$('#paper').ondragstart = event => {
+  const page = active(); if(!page || !$('#paper').draggable) { event.preventDefault(); return; }
+  draggedPageId = page.id; event.dataTransfer.setData(pageDragType,page.id); event.dataTransfer.effectAllowed = 'copyMove';
+};
+// Pointer dragging also works on touch screens and embedded browsers whose
+// native HTML drag-and-drop is limited. Text selection and editing stay native.
+$('#paper').onpointerdown = event => {
+  if(event.button !== 0 || !$('#paper').draggable || event.target.closest('button,textarea,input,a')) return;
+  event.preventDefault(); clearPaperDrag();
+  paperDrag = {id:active().id,pointer:event.pointerId,x:event.clientX,y:event.clientY};
+  $('#paper').setPointerCapture(event.pointerId);
+};
+$('#paper').onpointermove = event => {
+  if(!paperDrag || paperDrag.pointer !== event.pointerId) return;
+  if(!paperDrag.ghost && Math.hypot(event.clientX-paperDrag.x,event.clientY-paperDrag.y) < 8) return;
+  if(!paperDrag.ghost) {
+    motion.cancel(); paperDrag.ghost = node('div','paper-drag-preview',active().title); paperDrag.ghost.setAttribute('aria-hidden','true'); document.body.append(paperDrag.ghost);
+  }
+  paperDrag.ghost.style.transform = `translate(${event.clientX + 12}px,${event.clientY + 12}px)`;
+  const target = document.elementFromPoint(event.clientX,event.clientY)?.closest('.page-destination');
+  document.querySelectorAll('.page-destination').forEach(element => element.classList.toggle('drag-over',element === target));
+};
+$('#paper').onpointerup = event => {
+  if(!paperDrag || paperDrag.pointer !== event.pointerId) return;
+  const target = paperDrag.ghost && active()?.id === paperDrag.id && document.elementFromPoint(event.clientX,event.clientY)?.closest('.page-destination');
+  clearPaperDrag(); if(target) run(target.pageAction);
+};
+$('#paper').onpointercancel = $('#paper').onlostpointercapture = clearPaperDrag;
+window.addEventListener('blur',clearPaperDrag);
+document.addEventListener('visibilitychange',() => { if(document.hidden) clearPaperDrag(); });
+document.addEventListener('dragend',() => { draggedPageId = null; document.querySelectorAll('.drag-over').forEach(element => element.classList.remove('drag-over')); });
 for(const keys of ['1234567890','QWERTYUIOP','ASDFGHJKL','ZXCVBNM!?']) { const row = node('div','key-row'); for(const key of keys) row.append(node('span',key === '!' ? 'key accent' : 'key',key)); $('#keys').append(row); } $('#keys').append(node('div','space'));
 for(let i = 0;i < 37;i++) { const line = document.createElementNS('http://www.w3.org/2000/svg','line'); const angle = (i / 36 * 140 + 20) * Math.PI / 180; for(const [attr,value] of Object.entries({x1:130+Math.cos(angle)*112,y1:-19+Math.sin(angle)*82,x2:130+Math.cos(angle)*70,y2:-19+Math.sin(angle)*43})) line.setAttribute(attr,value); $('#typebars').append(line); }
 for(let i = 0;i < 60;i++) { const angle = i/60*Math.PI*2, major = i%5 === 0; const line = document.createElementNS('http://www.w3.org/2000/svg','line'); for(const [attr,value] of Object.entries({x1:100+Math.sin(angle)*(major?80:85),y1:100-Math.cos(angle)*(major?80:85),x2:100+Math.sin(angle)*90,y2:100-Math.cos(angle)*90})) line.setAttribute(attr,value); if(major) line.classList.add('major'); $('#clock-ticks').append(line); }

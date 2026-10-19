@@ -2,7 +2,7 @@
 
 ## Automated checks
 
-`npm test`: **22 passing tests** covering:
+`npm test`: **26 passing tests** covering:
 
 - Markdown extraction with YAML frontmatter, fenced code, nested tasks, numbered tasks, and sections.
 - Checkbox toggles, edits, and removals preserving prose, prefixes, and CRLF line endings.
@@ -16,6 +16,7 @@
 - Bulk exports separate notes from task lists, include archived pages and legacy plans, preserve page text, and retain validated note completion timestamps in backups.
 - Animation lifecycle: bounded work for 200-row lists, rapid repeated key strikes, cleanup without cancelling newer effects, reduced-motion changes, hidden tabs, and unsupported animation APIs.
 - Task printing: complete saved text retained beneath an accessible decorative overlay, grapheme-safe character reveal, cancellation on reduced motion/hidden tabs/detached elements, and bounded bulk printing with one scheduled timer.
+- Recoverable Bin/archive transitions through backup validation; exclusion of binned pages from bulk downloads; combined journal notes/sessions without duplicate snapshots; quote attribution export; desktop typing rhythm and a stationary typewriter arrow.
 
 `node --check public/app.js` passed. `npm run build` produced the static deployable files successfully.
 
@@ -46,9 +47,12 @@ Animation update: inspected the desktop Git revision `f23aab4` and current sourc
 
 Task-printing update: on the isolated port 4182 preview, submitting the task prompt closed the dialog and revealed characters on the paper while retaining the complete source text. Printing finished without leftover overlays. Bulk-adding two tasks from Focus opened Full page and printed the visible new rows; switching back to Focus interrupted the effect cleanly. Reload retained all three synthetic tasks. No browser console errors or warnings remained. Screenshot: [task printing in progress](task-printing-preview.jpg).
 
+Latest journal and filing update: re-read the desktop source at Git revision `bcd3674` without modifying it. Adapted its 77 ms short-text rhythm and 100 ms key release, with bounded bulk work and no per-character layout measurements. Browser checks on isolated port 4182 confirmed the new task placeholder, progressive typing with an untransformed arrow, quote-to-note creation, note completion, notes in the journal, and a journal download containing the complete note and source. Dragged a finished note into Archive and Bin, restored it from each, and verified finished state after reload. Completed a task list, downloaded its Markdown through Save file, verified the checked task on disk, and restored it from Bin. Reopening the task hides the finished-page targets. Checked wider note controls at desktop and 390-pixel widths without horizontal page overflow. No browser console errors or warnings. Screenshots: [finished page actions](finished-page-preview.jpg), [mobile note controls](notes-controls-mobile.jpg).
+
 ## Limits
 
 - Backup validation and storage failure handling were tested at the model layer; a complete file-picker backup restoration roundtrip was not browser-tested.
+- The Save file Markdown download was verified. Completing an operating-system save dialog to a chosen Desktop location was not verified; physical touch dragging was not tested. Clickable controls provide the same filing actions.
 - Physical speaker output, Safari, Firefox, installed standalone mode, and Hostinger production behavior were not verified in this environment.
 - No Hostinger deployment or domain change was performed. Deployment instructions and a static ZIP are provided for Hermes.
 - The app does not provide accounts, cloud sync, automatic offline caching, or direct Obsidian filesystem synchronization.

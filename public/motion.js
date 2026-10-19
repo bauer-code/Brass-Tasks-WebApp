@@ -41,7 +41,10 @@
       });
       if(!entries.length) return;
       const total = entries.reduce((n,entry) => n + entry.characters.length,0);
-      const delay = Math.max(12,Math.min(45,6000/Math.max(1,total))), chunk = Math.max(1,Math.ceil(total/500));
+      // Match the desktop's 77 ms rhythm for short tasks; batch long text into
+      // at most ~240 strikes so a bulk import never queues minutes of effects.
+      const chunk = Math.max(1,Math.ceil(total/240));
+      const delay = Math.max(24,Math.min(77,6000/Math.max(1,total/chunk)));
       const job = {entries,timer:null,row:0}; this.printing = job;
       const tick = () => {
         if(this.printing !== job) return;
@@ -51,12 +54,14 @@
         entry.overlay.textContent += next.join('');
         const character = next.at(-1);
         if(character) { this.strike(character); sound(character); }
+        let pause = character === ' ' ? delay * .75 : delay + (/[.,;:!?]/.test(character || '') ? 45 : 0);
         if(entry.index >= entry.characters.length) {
           entry.overlay.remove(); entry.element.classList.remove('task-printing'); job.row++;
           if(job.row === entries.length) { this.printing = null; this.carriage(); sound('\n'); return; }
           this.carriage(); sound('\n');
+          pause = 260;
         }
-        job.timer = this.schedule.set(tick,delay);
+        job.timer = this.schedule.set(tick,pause);
       };
       // Let the prompt close before the first key strikes.
       try { job.timer = this.schedule.set(tick,180); }
@@ -81,7 +86,6 @@
       const letters = [...new Set(rows.map(row => row.textContent).join('').normalize('NFD').replace(/\p{M}/gu,'').toUpperCase())];
       const printCaps = letters.map(letter => caps.find(cap => cap.textContent === letter)).filter(Boolean).slice(0,3);
       printCaps.forEach((cap,index) => this.animate(cap,[{transform:'translateY(0)'},{transform:'translateY(3px)',offset:.3},{transform:'translateY(0)'}],{duration:110,delay:90 + index*70}));
-      this.animate(this.document.querySelector('.type-guide'),[{transform:'translateY(0)'},{transform:'translateY(-4px)'},{transform:'translateY(0)'},{transform:'translateY(-4px)'},{transform:'translateY(0)'}],{duration:300,delay:90});
       this.roller();
     }
     roller() {
@@ -94,9 +98,9 @@
     strike(character = '') {
       if(!this.enabled) return;
       const key = character.normalize('NFD').replace(/\p{M}/gu,'').toUpperCase();
-      const cap = key === ' ' ? this.document.querySelector('#keys .space') : [...this.document.querySelectorAll('#keys .key')].find(el => el.textContent === key);
-      this.animate(cap,[{transform:'translateY(0)'},{transform:'translateY(3px)',offset:.3},{transform:'translateY(0)'}],{duration:120});
-      this.animate(this.document.querySelector('.type-guide'),[{transform:'translateY(0)'},{transform:'translateY(-4px)',offset:.35},{transform:'translateY(0)'}],{duration:110});
+      this.keycaps ||= new Map([...this.document.querySelectorAll('#keys .key')].map(cap => [cap.textContent,cap]));
+      const cap = key === ' ' ? this.document.querySelector('#keys .space') : this.keycaps.get(key);
+      this.animate(cap,[{transform:'translateY(0)'},{transform:'translateY(3px)',offset:.3},{transform:'translateY(0)'}],{duration:100});
       if(character === '\n') this.carriage();
     }
     check(row, nextTask = false) {

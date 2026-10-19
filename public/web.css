@@ -23,3 +23,12 @@ dialog{width:min(520px,calc(100vw - 32px));max-height:85vh;overflow:auto;backgro
 @media(min-width:651px) and (max-width:950px){.desk-note{display:block;grid-column:1/-1;width:100%;max-width:500px;margin-top:20px}}
 @media(max-width:650px){.archive-toggle{display:block;grid-column:1/-1;margin:0;font-size:10px}.library-bottom{grid-row:3}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* Roomy note controls and finished-page destinations. */
+.notes-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 18px}.notes-toolbar button{width:100%;min-height:46px;padding:12px 15px;text-align:center}.notes-toolbar button:first-child{background:#70573c;border-color:#70573c;color:#fff8e9}
+.storage-links{display:flex;gap:18px;margin-top:2px}.storage-links button{font-size:11px}
+#page-destinations{max-width:500px;margin:22px auto 0;padding:16px 0;border-top:1px solid #ded4c2}.destination-hint{font:11px/1.6 Arial,sans-serif;color:#8a7a62;text-align:center;margin:0 0 12px}.destination-targets{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.page-destination{width:auto;height:62px;display:flex;flex-direction:column;gap:7px;border:1px dashed #c9b99f;background:#f1eadc;font:11px Arial,sans-serif;color:#806d52}.page-destination svg{width:20px;height:20px}.page-destination.drag-over{background:#e0d3bc;border-style:solid;color:#514431;outline:2px solid #a08a67;outline-offset:3px}.finished-paper{cursor:grab}.finished-paper:active{cursor:grabbing}
+#quote-save{margin-left:auto}#quote-save .page-action{width:30px;height:30px;padding:6px}#quote-save .page-action svg{width:18px;height:18px}.quote-heading{gap:6px}.quote-heading>span:first-child{letter-spacing:.8px}
+@media(max-width:650px){.library .storage-links{grid-column:1/-1;grid-row:3;margin:0}.notes-toolbar{gap:10px}.notes-toolbar button{font-size:12px;padding:12px 9px}.page-destination{min-height:64px}.destination-hint{font-size:10px}}
+#page-destinations{margin:0 auto 22px;padding:0 0 16px;border-top:0;border-bottom:1px solid #ded4c2}
+.finished-paper .paper-kicker,.finished-paper .paper-title{touch-action:none;user-select:none}.paper-drag-preview{position:fixed;top:0;left:0;z-index:60;pointer-events:none;max-width:220px;padding:14px 18px;border:1px solid #c7b797;background:#faf3e3;box-shadow:0 8px 24px #57432b30;font:16px Georgia,serif;overflow-wrap:anywhere}
+.file-download{padding:12px 18px;border-radius:4px;min-height:44px}

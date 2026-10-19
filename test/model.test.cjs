@@ -65,3 +65,40 @@ test('bulk Markdown downloads separate notes and task lists and include archived
   assert.equal(M.validate({...M.fresh(),plans:pages}).plans[1].finishedAt,123);
   assert.throws(()=>M.validate({...M.fresh(),plans:[{...pages[1],finishedAt:'invalid'}]}),/completion time/);
 });
+
+test('bin and archive preserve page contents across backup and restore', () => {
+  const page = {id:'note',kind:'note',title:'Keep me',markdown:'A thought worth keeping.',status:'active',finishedAt:123};
+  const state = {...M.fresh(),activeId:'note',plans:[page,{id:'plan',title:'Next',markdown:'- [ ] Work',status:'active'}]};
+  M.movePage(state,'note','binned');
+  assert.equal(state.activeId,'plan');
+  const restored = M.validate(JSON.parse(JSON.stringify(state)));
+  assert.equal(restored.plans[0].markdown,page.markdown);
+  assert.equal(restored.plans[0].finishedAt,123);
+  assert.ok(!M.exportCollection(restored.plans,'note').includes(page.markdown));
+  M.movePage(restored,'note','active');
+  assert.equal(restored.activeId,'note');
+  assert.ok(M.exportCollection(restored.plans,'note').includes(page.markdown));
+  M.movePage(restored,'note','archived');
+  assert.ok(M.exportCollection(restored.plans,'note').includes(page.markdown));
+  assert.throws(()=>M.movePage(restored,'missing','binned'));
+});
+
+test('journal combines current draft and archived notes with sessions without duplicating notes', () => {
+  const state = {...M.fresh(),sessions:[{id:'session',title:'Focus',note:'Reflection',at:200}],plans:[
+    {id:'draft',kind:'note',title:'Draft',markdown:'Current words',status:'active',updatedAt:300},
+    {id:'finished',kind:'note',title:'Finished',markdown:'Preserved words',status:'archived',finishedAt:100},
+    {id:'bin',kind:'note',title:'Binned',markdown:'Hidden words',status:'binned',updatedAt:400}
+  ]};
+  const entries = M.journalEntries(state);
+  assert.deepEqual(entries.map(e=>e.id),['draft','session','finished']);
+  assert.equal(entries[0].label,'Draft note');
+  assert.equal(entries[2].label,'Archived note');
+  state.plans[0].markdown = 'Edited words';
+  assert.equal(M.journalEntries(state)[0].note,'Edited words');
+  assert.equal(state.sessions.length,1);
+});
+
+test('quote note exports preserve multiline text and its attribution', () => {
+  const quote = {text:'First line\nSecond line',author:'Writer',book:'Book',page:12,location:34};
+  assert.equal(M.quoteMarkdown(quote),'> First line\n> Second line\n\n— Writer, Book\n\nSource: Readwise PDF, page 12 · reading location 34\n');
+});

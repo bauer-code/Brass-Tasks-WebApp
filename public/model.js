@@ -43,18 +43,35 @@
   function advanceQuote(state, count) { state.quoteIndex = ((state.quoteIndex || 0) + 1) % count; }
   function exportMarkdown(page) { return page.kind === 'note' ? '# ' + page.title + '\n\n' + page.markdown : page.markdown; }
   function exportCollection(pages, kind) {
-    const selected = pages.filter(page => (page.kind === 'note' ? 'note' : 'plan') === kind);
+    const selected = pages.filter(page => page.status !== 'binned' && (page.kind === 'note' ? 'note' : 'plan') === kind);
     return '# ' + (kind === 'note' ? 'All notes' : 'All task lists') + '\n\n' + selected.map(page => {
       const content = exportMarkdown(page);
       return (parseMarkdown(content).title ? '' : '# ' + page.title + '\n\n') + content;
     }).join('\n\n---\n\n');
   }
   function fresh() { return { version:1, revision:0, activeId:null, quoteIndex:0, plans:[], sessions:[], preferences:{ focus:false, muted:false, tickMuted:true, bellMuted:false, digital:true }, timer:{} }; }
+  function movePage(state, id, status) {
+    const page = state.plans.find(page => page.id === id);
+    if(!page || !['active','archived','binned'].includes(status)) throw Error('This page is no longer available.');
+    page.status = status;
+    if(status === 'active') state.activeId = id;
+    else if(state.activeId === id) state.activeId = state.plans.find(page => page.status === 'active')?.id || null;
+  }
+  function journalEntries(state) {
+    return [...state.sessions, ...state.plans.filter(page => page.kind === 'note' && page.status !== 'binned').map(page => ({
+      id:page.id, pageId:page.id, title:page.title, note:page.markdown, kind:'note',
+      at:page.finishedAt || page.updatedAt || page.createdAt || 0,
+      label:page.status === 'archived' ? 'Archived note' : page.finishedAt ? 'Finished note' : 'Draft note'
+    }))].sort((a,b) => b.at - a.at);
+  }
+  function quoteMarkdown(quote) {
+    return quote.text.split(/\r?\n/).map(line => '> ' + line).join('\n') + '\n\n— ' + quote.author + ', ' + quote.book + '\n\nSource: Readwise PDF, page ' + quote.page + ' · reading location ' + quote.location + '\n';
+  }
   function validate(value) {
     if (!value || value.version !== 1 || !Array.isArray(value.plans) || !Array.isArray(value.sessions) || value.plans.length > 1000 || value.sessions.length > 10000) throw Error('This is not a valid Brass & Tasks backup.');
     const ids = new Set();
     for(const plan of value.plans) {
-      if(!plan || typeof plan.id !== 'string' || ids.has(plan.id) || typeof plan.title !== 'string' || typeof plan.markdown !== 'string' || plan.markdown.length > 2000000 || !['active','archived'].includes(plan.status)) throw Error('The backup contains an invalid plan.');
+      if(!plan || typeof plan.id !== 'string' || ids.has(plan.id) || typeof plan.title !== 'string' || typeof plan.markdown !== 'string' || plan.markdown.length > 2000000 || !['active','archived','binned'].includes(plan.status)) throw Error('The backup contains an invalid plan.');
       ids.add(plan.id);
       if(plan.kind !== undefined && !['plan','note'].includes(plan.kind)) throw Error('The backup contains an invalid page type.');
       if(plan.finishedAt !== undefined && (!Number.isFinite(plan.finishedAt) || plan.finishedAt < 0)) throw Error('The backup contains an invalid note completion time.');
@@ -73,6 +90,6 @@
     storage.setItem(KEY, JSON.stringify(next));
     return next;
   }
-  const api = { KEY, parseMarkdown, changeTask, addTask, parseTaskBatch, addTasks, isComplete, becameComplete, advanceQuote, exportMarkdown, exportCollection, cleanText, fresh, validate, commit };
+  const api = { KEY, parseMarkdown, changeTask, addTask, parseTaskBatch, addTasks, isComplete, becameComplete, advanceQuote, exportMarkdown, exportCollection, movePage, journalEntries, quoteMarkdown, cleanText, fresh, validate, commit };
   if(typeof module !== 'undefined' && module.exports) module.exports = api; else root.BrassModel = api;
 })(globalThis);

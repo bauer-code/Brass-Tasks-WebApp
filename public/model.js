@@ -41,6 +41,7 @@
   function isComplete(markdown) { const tasks = parseMarkdown(markdown).tasks; return tasks.length > 0 && tasks.every(task => task.done); }
   function becameComplete(before, after) { return !isComplete(before) && isComplete(after); }
   function advanceQuote(state, count) { state.quoteIndex = ((state.quoteIndex || 0) + 1) % count; }
+  function exportMarkdown(page) { return page.kind === 'note' ? '# ' + page.title + '\n\n' + page.markdown : page.markdown; }
   function fresh() { return { version:1, revision:0, activeId:null, quoteIndex:0, plans:[], sessions:[], preferences:{ focus:false, muted:false, tickMuted:true, bellMuted:false, digital:true }, timer:{} }; }
   function validate(value) {
     if (!value || value.version !== 1 || !Array.isArray(value.plans) || !Array.isArray(value.sessions) || value.plans.length > 1000 || value.sessions.length > 10000) throw Error('This is not a valid Brass & Tasks backup.');
@@ -48,6 +49,7 @@
     for(const plan of value.plans) {
       if(!plan || typeof plan.id !== 'string' || ids.has(plan.id) || typeof plan.title !== 'string' || typeof plan.markdown !== 'string' || plan.markdown.length > 2000000 || !['active','archived'].includes(plan.status)) throw Error('The backup contains an invalid plan.');
       ids.add(plan.id);
+      if(plan.kind !== undefined && !['plan','note'].includes(plan.kind)) throw Error('The backup contains an invalid page type.');
     }
     for(const session of value.sessions) if(!session || typeof session.id !== 'string' || typeof session.title !== 'string' || typeof session.note !== 'string' || !Number.isFinite(session.at)) throw Error('The backup contains an invalid session.');
     const defaults = fresh();
@@ -63,6 +65,6 @@
     storage.setItem(KEY, JSON.stringify(next));
     return next;
   }
-  const api = { KEY, parseMarkdown, changeTask, addTask, parseTaskBatch, addTasks, isComplete, becameComplete, advanceQuote, cleanText, fresh, validate, commit };
+  const api = { KEY, parseMarkdown, changeTask, addTask, parseTaskBatch, addTasks, isComplete, becameComplete, advanceQuote, exportMarkdown, cleanText, fresh, validate, commit };
   if(typeof module !== 'undefined' && module.exports) module.exports = api; else root.BrassModel = api;
 })(globalThis);

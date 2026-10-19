@@ -22,10 +22,10 @@
     <button class="utility" id="help-button" aria-label="About this workspace">?</button>
   </header>
   <main class="layout">
-    <aside class="library" aria-label="Your plans">
+    <aside class="library" aria-label="Your plans and notes">
       <div class="library-heading"><span class="eyebrow">YOUR NOTEBOOK</span><span class="small-mark">01 /</span></div>
-      <button class="primary new-button" id="create-button"><span>＋</span> New plan</button>
-      <label class="search-label"><span aria-hidden="true">⌕</span><input id="plan-search" type="search" placeholder="Find a plan…" aria-label="Find a plan"></label>
+      <div class="page-create-actions"><button class="primary new-button" id="create-note">＋ Add note</button><button class="primary new-button" id="create-button">＋ New plan</button></div>
+      <label class="search-label"><span aria-hidden="true">⌕</span><input id="plan-search" type="search" placeholder="Find a page…" aria-label="Find a page"></label>
       <div class="library-label"><span>ON YOUR DESK</span><span id="plan-count">0</span></div>
       <div id="plan-list"></div>
       <button class="text-button archive-toggle" id="archive-toggle" aria-expanded="false">Show archived plans</button>
@@ -38,7 +38,7 @@
         <div class="typewriter-area">
           <section id="machine" aria-label="Your task typewriter">
             <div id="paper-window"><article id="paper" tabindex="-1" aria-label="Plan checklist"></article></div>
-            <div class="top"><div class="roller"></div><div class="slot"></div><span class="roller-knob left"></span><span class="roller-knob right"></span><div class="hood-detail" aria-hidden="true"><svg viewBox="0 0 260 64"><path class="fan-bed" d="M12 9 Q130 100 248 9 L205 4 Q130 55 55 4Z"/><g id="typebars"></g><path class="type-guide" d="M120 24L130 8L140 24M130 8V37"/></svg></div><span class="brand">Brass &amp; Tasks</span><button id="new-plan" aria-label="Create a new plan" title="Create a new plan">＋</button></div>
+            <div class="top"><div class="roller"></div><div class="slot"></div><span class="roller-knob left"></span><span class="roller-knob right"></span><div class="hood-detail" aria-hidden="true"><svg viewBox="0 0 260 64"><path class="fan-bed" d="M12 9 Q130 100 248 9 L205 4 Q130 55 55 4Z"/><g id="typebars"></g><path class="type-guide" d="M120 24L130 8L140 24M130 8V37"/></svg></div><span class="brand">Brass &amp; Tasks</span><button id="new-note" aria-label="Add note" title="Add note">✎</button><button id="new-plan" aria-label="Create a new plan" title="Create a new plan">＋</button></div>
             <div class="body"><div class="status"><button id="machine-import" aria-label="Import Markdown" title="Import Markdown">＋</button><span id="progress">A fresh page awaits</span><button id="sound" aria-label="Mute all sounds" title="Mute all sounds">♪</button></div><div id="keys" aria-hidden="true"></div><div class="signature">BRASS &amp; TASKS <span>✦</span> ONE THING AT A TIME</div></div><div class="feet" aria-hidden="true"><i></i><i></i></div>
           </section>
           <div class="under-machine"><span id="task-summary">Make space for what matters.</span><button class="text-button" id="finish-button">Close this session ↗</button></div>

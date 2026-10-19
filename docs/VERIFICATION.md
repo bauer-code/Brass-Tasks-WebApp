@@ -2,7 +2,7 @@
 
 ## Automated checks
 
-`npm test`: **13 passing tests** covering:
+`npm test`: **14 passing tests** covering:
 
 - Markdown extraction with YAML frontmatter, fenced code, nested tasks, numbered tasks, and sections.
 - Checkbox toggles, edits, and removals preserving prose, prefixes, and CRLF line endings.
@@ -12,6 +12,7 @@
 - Bulk task parsing, 200-task limit, blank/oversized task rejection, initial unchecked state, and CRLF preservation.
 - Completion transitions, including no completion for empty lists or repeated renders.
 - Exactly 200 unique sourced quote records, full-cycle rotation, and compatibility with backups created before quotes were added.
+- Note storage and backup roundtrips, title/body Markdown export, renamed and empty notes, unchanged legacy-plan exports, and rejection of invalid page types.
 
 `node --check public/app.js` passed. `npm run build` produced the static deployable files successfully.
 
@@ -33,6 +34,8 @@ The app was served on `http://127.0.0.1:4173` and checked in the in-app browser 
 - Plan controls checked on an isolated preview at port 4182: cancel preserves an unfinished plan; confirmation deletes it and shows the empty state; deleting a completed, unselected plan preserves the current selection and persists after reload; archived plans can be deleted directly while their journal entries remain. The dark brown New plan button and visible Delete controls were checked at desktop and 390-pixel phone widths. No console warnings or errors. Screenshot: [plan controls](plan-controls-preview.jpg).
 
 Screenshots: [desktop](desktop-preview.jpg), [phone](mobile-preview.jpg). These screenshots contain synthetic demonstration content; fresh installations start with an empty workspace.
+
+Note pages were checked on the isolated port 4182 preview: creation from both note buttons, text persistence after reload, rename preserving body headings, Markdown download, archive/restore, and deletion. The downloaded `Afternoon notes.md` was read from disk and contained its title, paragraphs, Markdown headings, list, and accented text. Desktop and 390-pixel mobile layouts had no horizontal overflow or console errors. Screenshot: [note page](notes-preview.jpg).
 
 ## Limits
 

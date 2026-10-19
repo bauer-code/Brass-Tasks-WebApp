@@ -30,3 +30,19 @@ test('storage commits are atomic on failure and reject stale tabs', () => {
   storage.setItem = () => { throw Error('quota'); };
   assert.throws(() => M.commit(storage,first,1),/quota/); assert.equal(JSON.parse(saved).revision,1); assert.equal(first.revision,1);
 });
+
+test('notes survive storage and backup validation without changing existing plans', () => {
+  const body = 'A thought in Português.\n\n## Ideas\n- [ ] A checkbox stays literal in a note\n\n```js\nconst n = 1;\n```\n';
+  const note = {id:'note-1',kind:'note',title:'Reading notes',markdown:body,status:'active'};
+  const legacy = {id:'plan-1',title:'Existing plan',markdown:'# Existing plan\r\n- [ ] Read\r\n',status:'active'};
+  let stored;
+  const saved = M.commit({getItem:()=>null,setItem:(_,value)=>stored=value},{...M.fresh(),activeId:note.id,plans:[note,legacy]},0);
+  const restored = M.validate(JSON.parse(stored));
+  assert.deepEqual(restored.plans,saved.plans);
+  assert.equal(restored.activeId,note.id);
+  assert.equal(M.exportMarkdown(restored.plans[0]),'# Reading notes\n\n' + body);
+  assert.equal(M.exportMarkdown(restored.plans[1]),legacy.markdown);
+  assert.equal(M.exportMarkdown({...note,title:'Renamed note'}),'# Renamed note\n\n' + body);
+  assert.equal(M.exportMarkdown({...note,markdown:''}),'# Reading notes\n\n');
+  assert.throws(()=>M.validate({...M.fresh(),plans:[{...note,kind:'unknown'}]}),/page type/);
+});

@@ -22,6 +22,12 @@
       return effect;
     }
     cancel() { this.stopPrinting(); for(const effect of this.effects.values()) effect.cancel(); this.effects.clear(); }
+    settlePaper() {
+      const paper = this.document.querySelector('#paper');
+      for(const [element,effect] of this.effects) {
+        if(element === paper || paper?.contains(element)) { effect.cancel(); this.effects.delete(element); }
+      }
+    }
     stopPrinting() {
       if(!this.printing) return;
       this.schedule.clear(this.printing.timer);
@@ -31,13 +37,19 @@
     printTasks(elements, sound = () => {}) {
       this.stopPrinting();
       if(!this.enabled) return;
+      this.settlePaper();
       const segmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter(undefined,{granularity:'grapheme'}) : null;
       const entries = elements.slice(0,8).filter(element => element.isConnected).map(element => {
         const text = element.textContent;
         const characters = segmenter ? [...segmenter.segment(text)].map(part => part.segment) : [...text];
         const overlay = this.document.createElement('span'); overlay.className = 'task-print'; overlay.setAttribute('aria-hidden','true');
+        // Keep unrevealed text in the inline layout so a growing word cannot
+        // jump from the end of one line to the next while it is being printed.
+        const ink = this.document.createTextNode(''), pending = this.document.createElement('span');
+        pending.className = 'task-print-pending'; pending.textContent = text;
+        overlay.append(ink,pending);
         element.classList.add('task-printing'); element.append(overlay);
-        return {element,overlay,characters,index:0};
+        return {element,overlay,ink,pending,characters,index:0};
       });
       if(!entries.length) return;
       const total = entries.reduce((n,entry) => n + entry.characters.length,0);
@@ -51,7 +63,8 @@
         if(!this.enabled || entries.some(entry => !entry.element.isConnected)) return this.stopPrinting();
         const entry = entries[job.row];
         const next = entry.characters.slice(entry.index,entry.index + chunk); entry.index += next.length;
-        entry.overlay.textContent += next.join('');
+        entry.ink.appendData(next.join(''));
+        entry.pending.textContent = entry.characters.slice(entry.index).join('');
         const character = next.at(-1);
         if(character) { this.strike(character); sound(character); }
         let pause = character === ' ' ? delay * .75 : delay + (/[.,;:!?]/.test(character || '') ? 45 : 0);
@@ -92,7 +105,7 @@
       this.animate(this.document.querySelector('.roller'),[{transform:'scaleY(1)'},{transform:'scaleY(.85)',offset:.45},{transform:'scaleY(1)'}],{duration:240,easing:'steps(4, end)'});
     }
     carriage() {
-      this.animate(this.document.querySelector('#paper'),[{transform:'translate(0,0)'},{transform:'translate(3px,-3px)',offset:.3},{transform:'translate(-2px,-3px)',offset:.7},{transform:'translate(0,0)'}],{duration:230,easing:'steps(5, end)'});
+      // Feedback belongs to the mechanism; keep the reading/writing surface still.
       this.roller();
     }
     strike(character = '') {

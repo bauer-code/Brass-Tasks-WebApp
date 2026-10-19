@@ -16,6 +16,7 @@ function environment(rowCount = 0) {
   paper.getBoundingClientRect = () => ({top:0,bottom:500});
   const rows = Array.from({length:rowCount},()=>element('Task text stays available'));
   paper.querySelectorAll = () => rows;
+  paper.contains = element => rows.includes(element);
   const elements = {'#paper':paper,'.roller':roller,'.type-guide':guide,'#keys .space':space};
   const document = {...events(),hidden:false,querySelector:selector=>elements[selector],querySelectorAll:()=>[cap]};
   const preference = {...events(),matches:false};
@@ -77,7 +78,8 @@ function printingEnvironment(texts) {
   const e = environment(), pending = new Map(); let id = 0;
   const delays = [];
   e.motion.schedule = {set(fn,delay){delays.push(delay);pending.set(++id,fn);return id;},clear(key){pending.delete(key);}};
-  e.document.createElement = () => ({textContent:'',setAttribute(name,value){this[name]=value;},remove(){this.removed=true;}});
+  e.document.createElement = () => ({textContent:'',children:[],append(...children){this.children.push(...children);},setAttribute(name,value){this[name]=value;},remove(){this.removed=true;}});
+  e.document.createTextNode = data => ({data,appendData(text){this.data += text;}});
   const elements = texts.map(text => {
     const classes = new Set();
     return {textContent:text,isConnected:true,overlays:[],classList:{add:name=>classes.add(name),remove:name=>classes.delete(name),contains:name=>classes.has(name)},append(overlay){this.overlays.push(overlay);}};
@@ -91,9 +93,10 @@ test('task printing reveals whole graphemes while retaining the complete accessi
   const element = e.elements[0]; e.motion.printTasks(e.elements,char=>sounds.push(char));
   assert.equal(element.textContent,'A👩‍💻é');
   assert.equal(element.overlays[0]['aria-hidden'],'true');
-  e.step(); assert.equal(element.overlays[0].textContent,'A');
-  e.step(); assert.equal(element.overlays[0].textContent,'A👩‍💻');
-  e.step(); assert.equal(element.overlays[0].textContent,'A👩‍💻é');
+  const [ink,pending] = element.overlays[0].children;
+  e.step(); assert.equal(ink.data,'A'); assert.equal(pending.textContent,'👩‍💻é');
+  e.step(); assert.equal(ink.data,'A👩‍💻'); assert.equal(pending.textContent,'é');
+  e.step(); assert.equal(ink.data,'A👩‍💻é'); assert.equal(pending.textContent,'');
   assert.deepEqual(sounds,['A','👩‍💻','é','\n']);
   assert.equal(element.classList.contains('task-printing'),false);
   assert.equal(e.pending.size,0); assert.equal(e.motion.printing,null);
@@ -133,5 +136,29 @@ test('desktop rhythm pauses between tasks while the arrow stays stationary', () 
   e.step(); assert.equal(e.pending.size,0);
   e.motion.feed(); e.motion.strike('E'); e.motion.carriage(); e.motion.finish();
   assert.equal(e.guide.effects.length,0);
+  e.motion.destroy();
+});
+
+test('printing preserves the full line layout at every reveal and leaves the paper still', () => {
+  const text = 'A word near the margin must keep its final line position.';
+  const e = printingEnvironment([text]);
+  e.motion.feed(); const feed = e.paper.effects.at(-1);
+  e.motion.printTasks(e.elements);
+  assert.equal(feed.cancelled,true);
+  const [ink,pending] = e.elements[0].overlays[0].children;
+  while(e.pending.size) { e.step(); assert.equal(ink.data + pending.textContent,text); }
+  e.motion.strike('\n'); e.motion.carriage();
+  assert.equal(e.paper.effects.length,1);
+  assert.equal(e.motion.effects.has(e.paper),false);
+  e.motion.destroy();
+});
+
+test('writing settles page-entry effects without cancelling the key mechanism', () => {
+  const e = environment(3);
+  e.motion.feed(); e.motion.strike('E'); e.motion.settlePaper();
+  assert.equal(e.motion.effects.has(e.paper),false);
+  assert.ok(e.rows.every(row=>row.effects.every(effect=>effect.cancelled)));
+  assert.equal(e.motion.effects.has(e.cap),true);
+  assert.equal(e.motion.effects.has(e.roller),true);
   e.motion.destroy();
 });

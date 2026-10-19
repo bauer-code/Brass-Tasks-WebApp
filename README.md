@@ -33,6 +33,8 @@ npm start
 - The notebook holds task lists, with subtle archive and delete icons and a Download all task lists button. Bulk downloads combine all pages of the selected type, including archived pages, into one `.md` file. Notes and plans support rename, archive/restore, deletion, and workspace backups.
 - Create, edit, complete, uncheck, and remove tasks; undo the most recent removal before the plan changes again.
 - After submitting a new task, the full page opens and the typewriter prints it letter by letter with synchronized keys and sound. Text saves immediately; bulk entry animates only visible new tasks with bounded work. Switching views or enabling reduced motion reveals the complete text immediately.
+- Printing reserves the complete text layout, so words stay on their final lines throughout the reveal. Carriage feedback moves only the roller; starting to write settles any page-entry animation. Loading a page and finishing a page retain their separate paper effects.
+- Individual note downloads include the title and original creation timestamp, inspired by the desktop Notes folder. The Notes library shows creation dates; task-list downloads retain their title-based names.
 - Bulk add up to 200 tasks at once: one per line, with optional bullets, numbering, or Markdown checkboxes. The entire batch is validated before saving; every added task starts unchecked.
 - Full-page and one-task focus views.
 - Import `.md`/`.markdown` by file picker, drag and drop, or pasted text; download the current plan as Markdown.

@@ -102,3 +102,13 @@ test('quote note exports preserve multiline text and its attribution', () => {
   const quote = {text:'First line\nSecond line',author:'Writer',book:'Book',page:12,location:34};
   assert.equal(M.quoteMarkdown(quote),'> First line\n> Second line\n\n— Writer, Book\n\nSource: Readwise PDF, page 12 · reading location 34\n');
 });
+
+test('note filenames use a stable creation timestamp while task lists keep their title', () => {
+  const page = {title:'Ideas: next steps',kind:'note',createdAt:new Date(2026,9,19,9,5,2).getTime()};
+  assert.equal(M.pageFilename(page),'Ideas- next steps - 2026-10-19 09-05-02.md');
+  assert.equal(M.pageFilename({...page,updatedAt:Date.now()}),M.pageFilename(page));
+  assert.equal(M.pageFilename({...page,kind:'plan'}),'Ideas- next steps.md');
+  assert.equal(M.pageFilename({...page,createdAt:undefined}),'Ideas- next steps.md');
+  assert.equal(M.pageFilename({...page,createdAt:'invalid'}),'Ideas- next steps.md');
+  assert.equal(M.pageFilename({title:'CON',kind:'plan'}),'_CON.md');
+});

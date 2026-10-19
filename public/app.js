@@ -90,12 +90,13 @@ function notesDialog() {
     for(const note of notes) {
       const card = node('article','saved-note');
       card.append(node('h3','',note.title),node('small','',note.status === 'archived' ? 'Archived' : note.finishedAt ? 'Finished' : 'Draft'));
+      if(Number.isFinite(note.createdAt)) card.append(node('small','note-date','Created ' + new Date(note.createdAt).toLocaleString()));
       const actions = node('div','saved-note-actions');
       actions.append(button(note.status === 'archived' ? 'Restore & open' : 'Open note',() => run(() => {
         mutate(next => { next.plans.find(p => p.id === note.id).status = 'active'; next.activeId = note.id; });
         render(); closeModal(); $('#paper').focus();
       }),'text-button'));
-      actions.append(pageIcon('download','Download note: ' + note.title,() => download(filename(note.title) + '.md',M.exportMarkdown(note))));
+      actions.append(pageIcon('download','Download note: ' + note.title,() => download(M.pageFilename(note),M.exportMarkdown(note))));
       if(note.status !== 'archived') actions.append(pageIcon('archive','Archive note: ' + note.title,() => run(() => { archivePage(note); notesDialog(); })));
       actions.append(pageIcon('delete','Delete note: ' + note.title,() => deletePlanDialog(note)));
       card.append(actions); content.append(card);
@@ -118,7 +119,7 @@ function storedPagesDialog(status) {
     for(const page of pages) {
       const card = node('article','saved-note'); card.append(node('h3','',page.title),node('small','',page.kind === 'note' ? 'Note' : 'Task list'));
       const actions = node('div','saved-note-actions');
-      actions.append(button('Restore & open',() => run(() => { mutate(next => M.movePage(next,page.id,'active')); showArchived = false; render(); closeModal(); $('#paper').focus(); }),'text-button'),pageIcon('download','Download: ' + page.title,() => download(filename(page.title) + '.md',M.exportMarkdown(page))));
+      actions.append(button('Restore & open',() => run(() => { mutate(next => M.movePage(next,page.id,'active')); showArchived = false; render(); closeModal(); $('#paper').focus(); }),'text-button'),pageIcon('download','Download: ' + page.title,() => download(M.pageFilename(page),M.exportMarkdown(page))));
       card.append(actions); content.append(card);
     }
   });
@@ -128,11 +129,11 @@ function savePageFile(page) {
   const canChoose = typeof window.showSaveFilePicker === 'function';
   openModal('Save your page.', content => {
     content.append(node('p','',canChoose ? 'Save a Markdown copy. Choose Desktop or another folder in the save dialog, or download to your browser’s download folder.' : 'Download a Markdown copy. Your browser chooses the download folder; you can move the file to Desktop.'));
-    if(canChoose) content.append(button('Download Markdown',() => { download(filename(page.title) + '.md',M.exportMarkdown(page)); closeModal(); },'secondary file-download'));
+    if(canChoose) content.append(button('Download Markdown',() => { download(M.pageFilename(page),M.exportMarkdown(page)); closeModal(); },'secondary file-download'));
   },canChoose ? 'Choose folder' : 'Download Markdown',() => writePageFile(page));
 }
 async function writePageFile(page) {
-  const name = filename(page.title) + '.md', markdown = M.exportMarkdown(page);
+  const name = M.pageFilename(page), markdown = M.exportMarkdown(page);
   if(!window.showSaveFilePicker) { download(name,markdown); toast('Markdown downloaded. Your browser chooses the folder; move it to Desktop if needed.'); return; }
   try {
     const handle = await window.showSaveFilePicker({suggestedName:name,startIn:'desktop',types:[{description:'Markdown note',accept:{'text/markdown':['.md']}}]});
@@ -263,6 +264,7 @@ function renderPaper() {
     editor.readOnly = Boolean(plan.finishedAt);
     editor.setAttribute('aria-label','Write your note'); editor.placeholder = 'Let your thoughts find their way onto the page…';
     editor.oninput = () => run(() => {
+      motion.settlePaper();
       mutate(next => { const note = next.plans.find(p => p.id === plan.id); note.markdown = editor.value; note.updatedAt = Date.now(); });
     });
     editor.addEventListener('input',event => {
@@ -323,7 +325,6 @@ function render() {
 function download(name, data, type = 'text/markdown;charset=utf-8') {
   const url = URL.createObjectURL(new Blob([data], {type})); const a = node('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
-function filename(title) { return title.replace(/[<>:"/\\|?*\x00-\x1f]/g,'-').slice(0,100) || 'plan'; }
 function importText(markdown, fallback = 'Imported plan') {
   if(!markdown.trim()) throw Error('This file is empty.');
   if(markdown.length > 2000000) throw Error('Choose a Markdown file smaller than 2 MB.');
@@ -350,7 +351,7 @@ $('#plan-search').oninput = renderLibrary;
 $('#archive-toggle').onclick = () => { showArchived = !showArchived; renderLibrary(); };
 $('#list-view').onclick = () => run(() => { mutate(next => next.preferences.focus = false); render(); });
 $('#focus-view').onclick = () => run(() => { mutate(next => next.preferences.focus = true); render(); });
-$('#export-button').onclick = () => { const plan = active(); if(plan) download(filename(plan.title) + '.md',M.exportMarkdown(plan)); };
+$('#export-button').onclick = () => { const plan = active(); if(plan) download(M.pageFilename(plan),M.exportMarkdown(plan)); };
 $('#backup-button').onclick = () => {
   try { const contents = storageError ? localStorage.getItem(M.KEY) : JSON.stringify({...state,timer:timer.serialize()},null,2); download('brass-tasks-backup-' + new Date().toISOString().slice(0,10) + '.json',contents || '{}','application/json'); }
   catch(error) { toast(error.message); }
@@ -384,7 +385,7 @@ $('#plan-menu').onclick = () => {
 };
 $('#finish-button').onclick = () => {
   const plan = active(); if(!plan) return;
-  if(plan.kind === 'note') return download(filename(plan.title) + '.md',M.exportMarkdown(plan));
+  if(plan.kind === 'note') return download(M.pageFilename(plan),M.exportMarkdown(plan));
   const tasks = M.parseMarkdown(plan.markdown).tasks;
   openModal('Leave a reflection.', content => { content.append(node('p','',`${tasks.filter(t => t.done).length} of ${tasks.length} tasks complete. Save a note and archive this plan for later.`)); field('What did you learn? What comes next?', 'session-note', 'textarea'); }, 'Save & close session', () => {
     mutate(next => { next.sessions.unshift({id:crypto.randomUUID(),title:plan.title,note:$('#session-note').value.slice(0,10000),at:Date.now(),kind:'reflection',done:tasks.filter(t => t.done).length,total:tasks.length}); next.plans.find(p => p.id === plan.id).status = 'archived'; next.activeId = next.plans.find(p => p.status === 'active')?.id || null; }); render(); toast('Progress, safely tucked away.');
@@ -399,7 +400,7 @@ $('#history-button').onclick = () => openModal('Your session journal.', content 
       const item = node('article','journal-entry'); item.append(node('small','',`${new Date(entry.at).toLocaleString()} · ${entry.label || 'Session'}`),node('h3','',entry.title),node('p','',entry.note));
       if(entry.pageId) {
         const page = state.plans.find(page => page.id === entry.pageId), actions = node('div','saved-note-actions');
-        actions.append(button(page.status === 'archived' ? 'Restore & open note' : 'Open note',() => run(() => { mutate(next => M.movePage(next,page.id,'active')); render(); closeModal(); $('#paper').focus(); }),'text-button'),pageIcon('download','Download note: ' + page.title,() => download(filename(page.title) + '.md',M.exportMarkdown(page))));
+        actions.append(button(page.status === 'archived' ? 'Restore & open note' : 'Open note',() => run(() => { mutate(next => M.movePage(next,page.id,'active')); render(); closeModal(); $('#paper').focus(); }),'text-button'),pageIcon('download','Download note: ' + page.title,() => download(M.pageFilename(page),M.exportMarkdown(page))));
         item.append(actions);
       }
       content.append(item);

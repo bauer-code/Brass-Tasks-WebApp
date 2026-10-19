@@ -42,6 +42,14 @@
   function becameComplete(before, after) { return !isComplete(before) && isComplete(after); }
   function advanceQuote(state, count) { state.quoteIndex = ((state.quoteIndex || 0) + 1) % count; }
   function exportMarkdown(page) { return page.kind === 'note' ? '# ' + page.title + '\n\n' + page.markdown : page.markdown; }
+  function pageFilename(page) {
+    let title = page.title.replace(/[<>:"/\\|?*\x00-\x1f]/g,'-').slice(0,100).replace(/[. ]+$/g,'') || 'page';
+    if(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(title)) title = '_' + title;
+    const date = new Date(page.createdAt);
+    if(page.kind !== 'note' || !Number.isFinite(page.createdAt) || !Number.isFinite(date.getTime())) return title + '.md';
+    const pad = n => String(n).padStart(2,'0');
+    return `${title} - ${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}.md`;
+  }
   function exportCollection(pages, kind) {
     const selected = pages.filter(page => page.status !== 'binned' && (page.kind === 'note' ? 'note' : 'plan') === kind);
     return '# ' + (kind === 'note' ? 'All notes' : 'All task lists') + '\n\n' + selected.map(page => {
@@ -90,6 +98,6 @@
     storage.setItem(KEY, JSON.stringify(next));
     return next;
   }
-  const api = { KEY, parseMarkdown, changeTask, addTask, parseTaskBatch, addTasks, isComplete, becameComplete, advanceQuote, exportMarkdown, exportCollection, movePage, journalEntries, quoteMarkdown, cleanText, fresh, validate, commit };
+  const api = { KEY, parseMarkdown, changeTask, addTask, parseTaskBatch, addTasks, isComplete, becameComplete, advanceQuote, exportMarkdown, pageFilename, exportCollection, movePage, journalEntries, quoteMarkdown, cleanText, fresh, validate, commit };
   if(typeof module !== 'undefined' && module.exports) module.exports = api; else root.BrassModel = api;
 })(globalThis);

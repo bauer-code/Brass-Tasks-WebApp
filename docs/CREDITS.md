@@ -9,3 +9,7 @@ The typewriter and clock visual styling, icon, Pomodoro state machine and its or
 - The icon is the combined Brass & Tasks typewriter and clock icon from the original application.
 
 No remote font, image, analytics, or CDN services are used by the deployed app.
+
+The quote card uses 200 selected highlights from the user-provided Readwise PDF. The collection is credited by book and author, with PDF pages and reading locations recorded in [QUOTES.md](QUOTES.md). The source PDF, full extraction, and personal annotations are not included in the repository. No external quotation search or additional quotations were required.
+
+The list-completion sound is a new Web Audio synthesis of the paper-release lever, platen ratchet, and sheet pulling free; it is not a recording taken from another source.

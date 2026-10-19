@@ -19,7 +19,13 @@ function mutate(edit) {
 }
 function run(action) { try { return action(); } catch(error) { toast(error.message); } }
 function active() { return state.plans.find(plan => plan.id === state.activeId && plan.status === 'active'); }
-function savePlan(markdown) { mutate(next => { const plan = next.plans.find(p => p.id === next.activeId); plan.markdown = markdown; plan.updatedAt = Date.now(); }); render(); }
+function savePlan(markdown) {
+  const completed = M.becameComplete(active().markdown,markdown);
+  mutate(next => { const plan = next.plans.find(p => p.id === next.activeId); plan.markdown = markdown; plan.updatedAt = Date.now(); if(completed) M.advanceQuote(next,BrassQuotes.length); });
+  render();
+  if(completed) { typeSound.ejectPaper(); toast('Plan complete. A fresh thought for your next chapter.'); }
+  return completed;
+}
 function createPlan(title, markdown = '') {
   title = M.cleanText(title);
   mutate(next => { const id = crypto.randomUUID(); next.plans.unshift({ id, title, markdown:markdown || '# ' + title + '\n\n', status:'active', createdAt:Date.now(), updatedAt:Date.now() }); next.activeId = id; });
@@ -54,11 +60,34 @@ function newPlanDialog() { openModal('A fresh page.', () => { const input = fiel
 function addTaskDialog(task) {
   if(!active()) return newPlanDialog();
   const id = active().id;
-  openModal(task ? 'A little refinement.' : 'What’s the next small thing?', () => { const input = field('Task', 'task-text', 'text', task?.text || ''); input.maxLength = 500; input.required = true; input.placeholder = 'Something you can actually do'; }, task ? 'Save task' : 'Add task', () => {
+  openModal(task ? 'Refine your task.' : 'What’s the next small thing?', content => { const input = field('Task', 'task-text', 'text', task?.text || ''); input.maxLength = 500; input.required = true; input.placeholder = 'Something you can actually do'; if(!task) content.append(button('Add multiple tasks instead',bulkTaskDialog,'text-button')); }, task ? 'Save task' : 'Add task', () => {
     if(active()?.id !== id) throw Error('The active plan changed. Open this dialog again.');
     const markdown = task ? M.changeTask(active().markdown, task.line, 'edit', $('#task-text').value) : M.addTask(active().markdown, $('#task-text').value);
     savePlan(markdown); typeSound.play();
   });
+}
+function bulkTaskDialog() {
+  if(!active()) return newPlanDialog();
+  const id = active().id;
+  openModal('Make room for the whole plan.', content => {
+    content.append(node('p','','One task per line, up to 200 at once. Plain text, bullet lists, numbered lists, and Markdown checkboxes are accepted. All added tasks start unchecked.'));
+    const input = field('Tasks, one per line','bulk-tasks','textarea'); input.required = true; input.maxLength = 110000;
+    input.placeholder = 'Read the chapter\nDraft the outline\nReview the first version';
+    const count = node('p','batch-count','0 tasks ready to add'); count.id = 'batch-count'; count.setAttribute('role','status'); content.append(count);
+    input.oninput = () => { try { const n = M.parseTaskBatch(input.value).length; count.textContent = `${n} ${n === 1 ? 'task' : 'tasks'} ready to add`; } catch(error) { count.textContent = input.value.trim() ? error.message : '0 tasks ready to add'; } };
+  },'Add tasks',() => {
+    if(active()?.id !== id) throw Error('The active plan changed. Open this dialog again.');
+    const text = $('#bulk-tasks').value, count = M.parseTaskBatch(text).length;
+    savePlan(M.addTasks(active().markdown,text)); typeSound.play('return'); toast(`${count} tasks added.`);
+  });
+}
+function renderQuote() {
+  const quote = BrassQuotes[state.quoteIndex || 0];
+  $('#quote-text').textContent = quote.text;
+  $('#quote-source').textContent = `From ${quote.book} · ${quote.author}`;
+  $('#quote-source').title = `Readwise PDF, page ${quote.page} · reading location ${quote.location}`;
+  $('#quote-position').textContent = `${(state.quoteIndex || 0) + 1} / ${BrassQuotes.length}`;
+  $('#quote-text').dataset.quoteId = quote.id;
 }
 function renderLibrary() {
   const query = $('#plan-search').value.trim().toLowerCase(); const list = $('#plan-list'); list.replaceChildren();
@@ -82,7 +111,7 @@ function renderPaper() {
   $('#export-button').disabled = !plan; $('#plan-menu').disabled = !plan; $('#finish-button').hidden = !plan;
   if(!plan) {
     paper.append(node('div','paper-kicker','YOUR NEXT CHAPTER'),node('h2','paper-welcome','A fresh page awaits.'),node('p','empty-paper','Bring a plan, or start with one small thing. There’s room to begin again.'));
-    paper.append(button('+ Create your first plan',newPlanDialog,'paper-start'),node('br'),button('Try a sample plan', () => run(() => createPlan('A little fresh start', '# A little fresh start\n\n## Settle in\n- [ ] Choose one thing that matters today\n- [ ] Start a focus session with the brass clock\n- [ ] Take a breath, and mark your progress\n')), 'paper-start'));
+    paper.append(button('+ Create your first plan',newPlanDialog,'paper-start'),node('br'),button('Try a sample plan', () => run(() => createPlan('A fresh start', '# A fresh start\n\n## Settle in\n- [ ] Choose one thing that matters today\n- [ ] Start a focus session with the brass clock\n- [ ] Take a breath, and mark your progress\n')), 'paper-start'));
     $('#progress').textContent = 'A fresh page awaits'; $('#task-summary').textContent = 'Make space for what matters.'; return;
   }
   const parsed = M.parseMarkdown(plan.markdown), complete = parsed.tasks.filter(task => task.done).length;
@@ -93,7 +122,7 @@ function renderPaper() {
   visible.forEach(task => {
     if(task.section && task.section !== section) paper.append(node('div','section',task.section)); section = task.section;
     const row = node('div','task-item');
-    const toggle = button('', () => run(() => { savePlan(M.changeTask(active().markdown,task.line,'toggle')); typeSound.play(task.done ? 'key' : 'return'); const nextToggle = document.querySelector(`[data-task-line="${task.line}"]`) || $('.task') || $('.add-task'); nextToggle?.focus({preventScroll:true}); }), 'task' + (task.done ? ' done' : ''));
+    const toggle = button('', () => run(() => { const completed = savePlan(M.changeTask(active().markdown,task.line,'toggle')); if(!completed) typeSound.play(task.done ? 'key' : 'return'); const nextToggle = document.querySelector(`[data-task-line="${task.line}"]`) || $('.task') || $('.add-task'); nextToggle?.focus({preventScroll:true}); }), 'task' + (task.done ? ' done' : ''));
     toggle.setAttribute('role','checkbox'); toggle.setAttribute('aria-checked',String(task.done)); toggle.dataset.taskLine = task.line;
     const box = node('span','box'); box.setAttribute('aria-hidden','true'); box.innerHTML = '<svg viewBox="0 0 8 8"><path d="M1 4 L3 6 L7 1"/></svg>';
     toggle.append(box,node('span','task-text',task.text));
@@ -110,6 +139,7 @@ function renderPaper() {
   if(!parsed.tasks.length) paper.append(node('p','empty-paper','A small step is a good place to start.'));
   else if(complete === parsed.tasks.length) paper.append(node('p','all-done','A little progress. A lovely feeling. ✓'));
   paper.append(button('+ add a task',() => addTaskDialog(),'add-task'));
+  paper.append(button('+ add multiple tasks',bulkTaskDialog,'add-task bulk-add'));
   paper.scrollTop = scroll;
   $('#progress').textContent = `${complete} / ${parsed.tasks.length} tasks complete`;
   $('#task-summary').textContent = parsed.tasks.length ? `${parsed.tasks.length - complete} small ${parsed.tasks.length - complete === 1 ? 'step' : 'steps'} to go.` : 'Make space for what matters.';
@@ -117,7 +147,7 @@ function renderPaper() {
 function render() {
   renderLibrary(); renderPaper();
   $('#list-view').setAttribute('aria-pressed', String(!state.preferences.focus)); $('#focus-view').setAttribute('aria-pressed', String(state.preferences.focus));
-  applyAudio(); drawTimer();
+  applyAudio(); drawTimer(); renderQuote();
 }
 function download(name, data, type = 'text/markdown;charset=utf-8') {
   const url = URL.createObjectURL(new Blob([data], {type})); const a = node('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
@@ -173,8 +203,8 @@ $('#plan-menu').onclick = () => {
 $('#finish-button').onclick = () => {
   const plan = active(); if(!plan) return;
   const tasks = M.parseMarkdown(plan.markdown).tasks;
-  openModal('Leave a little reflection.', content => { content.append(node('p','',`${tasks.filter(t => t.done).length} of ${tasks.length} tasks complete. Save a note and archive this plan for later.`)); field('What did you learn? What comes next?', 'session-note', 'textarea'); }, 'Save & close session', () => {
-    mutate(next => { next.sessions.unshift({id:crypto.randomUUID(),title:plan.title,note:$('#session-note').value.slice(0,10000),at:Date.now(),kind:'reflection',done:tasks.filter(t => t.done).length,total:tasks.length}); next.plans.find(p => p.id === plan.id).status = 'archived'; next.activeId = next.plans.find(p => p.status === 'active')?.id || null; }); render(); toast('A little progress, safely tucked away.');
+  openModal('Leave a reflection.', content => { content.append(node('p','',`${tasks.filter(t => t.done).length} of ${tasks.length} tasks complete. Save a note and archive this plan for later.`)); field('What did you learn? What comes next?', 'session-note', 'textarea'); }, 'Save & close session', () => {
+    mutate(next => { next.sessions.unshift({id:crypto.randomUUID(),title:plan.title,note:$('#session-note').value.slice(0,10000),at:Date.now(),kind:'reflection',done:tasks.filter(t => t.done).length,total:tasks.length}); next.plans.find(p => p.id === plan.id).status = 'archived'; next.activeId = next.plans.find(p => p.status === 'active')?.id || null; }); render(); toast('Progress, safely tucked away.');
   });
 };
 $('#history-button').onclick = () => openModal('Your session journal.', content => {
@@ -217,17 +247,20 @@ function drawTimer() {
   const elapsed = Math.floor(timer.elapsed()/1000); const time = String(Math.floor(elapsed/60)).padStart(2,'0') + ':' + String(elapsed%60).padStart(2,'0');
   $('#timer-time').textContent = time; $('#timer-mode').textContent = modeLabel[timer.mode].toUpperCase(); $('#timer-target').textContent = 'OF ' + timer.settings[timer.mode] + ' MIN';
   $('#timer-start').textContent = timer.completed ? (timer.mode === 'work' ? 'Take a break' : 'Next focus') : timer.running ? 'Pause' : timer.elapsed() > 0 ? 'Resume' : 'Start ' + (timer.mode === 'work' ? 'focus' : 'break');
-  const status = timer.completed ? 'Session complete. A little pause is earned.' : timer.running ? 'Just this moment. Just this task.' : timer.elapsed() > 0 ? 'Paused. Take your time.' : 'No rush. Just begin.';
+  const status = timer.completed ? 'Session complete. A pause is earned.' : timer.running ? 'Just this moment. Just this task.' : timer.elapsed() > 0 ? 'Paused. Take your time.' : 'No rush. Just begin.';
   if($('#timer-state').textContent !== status) $('#timer-state').textContent = status;
   document.querySelectorAll('[data-mode]').forEach(btn => btn.setAttribute('aria-pressed',String(btn.dataset.mode === timer.mode)));
-  const dots = $('#session-dots'); dots.replaceChildren(); for(let i = 0;i < 4;i++) dots.append(node('i',i < (timer.workCount % 4 || (timer.workCount ? 4 : 0)) ? 'done' : ''));
-  dots.setAttribute('aria-label',timer.workCount + ' completed focus sessions');
+  const cycleDone = timer.workCount % 4 || (timer.workCount > 0 && (timer.mode !== 'work' || timer.completed) ? 4 : 0);
+  const dots = $('#session-dots'); dots.replaceChildren(); for(let i = 0;i < 4;i++) dots.append(node('i',i < cycleDone ? 'done' : ''));
+  const cycleLabel = `${cycleDone} of 4 focus sessions · long break after 4`;
+  dots.setAttribute('aria-label',cycleLabel); dots.title = cycleLabel; $('#session-progress-label').textContent = cycleLabel;
   document.title = timer.running ? `${time} · ${modeLabel[timer.mode]} — Brass & Tasks` : 'Brass & Tasks — Your quiet workspace';
 }
 function completeTimer() {
   const before = timer.serialize(); if(!timer.tick()) return;
   try {
-    mutate(next => { if(timer.mode === 'work') next.sessions.unshift({id:crypto.randomUUID(),at:Date.now(),kind:'focus',title:active()?.title || 'A moment of focus',note:`Completed ${timer.settings.work} ${timer.settings.work === 1 ? 'minute' : 'minutes'} of focus.`}); });
+    mutate(next => { if(timer.mode === 'work') { next.sessions.unshift({id:crypto.randomUUID(),at:Date.now(),kind:'focus',title:active()?.title || 'A moment of focus',note:`Completed ${timer.settings.work} ${timer.settings.work === 1 ? 'minute' : 'minutes'} of focus.`}); M.advanceQuote(next,BrassQuotes.length); } });
+    renderQuote();
     clockSound.setTicking(false); clockSound.alarm(); toast(modeLabel[timer.mode] + ' complete. Take a breath.');
   } catch(error) { timer = new Pomodoro(before); timer.pause(); clockSound.setTicking(false); toast(error.message); }
 }
@@ -256,5 +289,5 @@ for(const keys of ['1234567890','QWERTYUIOP','ASDFGHJKL','ZXCVBNM!?']) { const r
 for(let i = 0;i < 37;i++) { const line = document.createElementNS('http://www.w3.org/2000/svg','line'); const angle = (i / 36 * 140 + 20) * Math.PI / 180; for(const [attr,value] of Object.entries({x1:130+Math.cos(angle)*112,y1:-19+Math.sin(angle)*82,x2:130+Math.cos(angle)*70,y2:-19+Math.sin(angle)*43})) line.setAttribute(attr,value); $('#typebars').append(line); }
 for(let i = 0;i < 60;i++) { const angle = i/60*Math.PI*2, major = i%5 === 0; const line = document.createElementNS('http://www.w3.org/2000/svg','line'); for(const [attr,value] of Object.entries({x1:100+Math.sin(angle)*(major?80:85),y1:100-Math.cos(angle)*(major?80:85),x2:100+Math.sin(angle)*90,y2:100-Math.cos(angle)*90})) line.setAttribute(attr,value); if(major) line.classList.add('major'); $('#clock-ticks').append(line); }
 for(let i = 1;i <= 12;i++) { const angle = i/12*Math.PI*2; const text = document.createElementNS('http://www.w3.org/2000/svg','text'); text.setAttribute('x',100+Math.sin(angle)*69); text.setAttribute('y',100-Math.cos(angle)*69); text.textContent = i; $('#clock-numbers').append(text); }
-$('#today-label').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}).toUpperCase() + ' / A LITTLE ROOM FOR FOCUS';
+$('#today-label').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}).toUpperCase() + ' / ROOM FOR FOCUS';
 render(); if(storageError) toast(storageError); else completeTimer();

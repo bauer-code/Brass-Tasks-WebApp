@@ -28,7 +28,20 @@
   }
   function cleanText(text) { const value = String(text || '').replace(/[\r\n]+/g, ' ').trim(); if(!value || value.length > 500) throw Error('Enter between 1 and 500 characters.'); return value; }
   function addTask(markdown, text) { const nl = markdown.includes('\r\n') ? '\r\n' : '\n'; return markdown.replace(/\s*$/, '') + nl + '- [ ] ' + cleanText(text) + nl; }
-  function fresh() { return { version:1, revision:0, activeId:null, plans:[], sessions:[], preferences:{ focus:false, muted:false, tickMuted:true, bellMuted:false, digital:true }, timer:{} }; }
+  function parseTaskBatch(text) {
+    const lines = String(text || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    if(!lines.length) throw Error('Enter at least one task, one per line.');
+    if(lines.length > 200) throw Error('Add up to 200 tasks at a time.');
+    return lines.map(line => cleanText(line.replace(/^(?:[-*+•]|\d+[.)])\s+/, '').replace(/^\[[ xX]\]\s*/, '')));
+  }
+  function addTasks(markdown, text) {
+    const tasks = parseTaskBatch(text), nl = markdown.includes('\r\n') ? '\r\n' : '\n';
+    return markdown.replace(/\s*$/, '') + nl + tasks.map(task => '- [ ] ' + task).join(nl) + nl;
+  }
+  function isComplete(markdown) { const tasks = parseMarkdown(markdown).tasks; return tasks.length > 0 && tasks.every(task => task.done); }
+  function becameComplete(before, after) { return !isComplete(before) && isComplete(after); }
+  function advanceQuote(state, count) { state.quoteIndex = ((state.quoteIndex || 0) + 1) % count; }
+  function fresh() { return { version:1, revision:0, activeId:null, quoteIndex:0, plans:[], sessions:[], preferences:{ focus:false, muted:false, tickMuted:true, bellMuted:false, digital:true }, timer:{} }; }
   function validate(value) {
     if (!value || value.version !== 1 || !Array.isArray(value.plans) || !Array.isArray(value.sessions) || value.plans.length > 1000 || value.sessions.length > 10000) throw Error('This is not a valid Brass & Tasks backup.');
     const ids = new Set();
@@ -39,6 +52,7 @@
     for(const session of value.sessions) if(!session || typeof session.id !== 'string' || typeof session.title !== 'string' || typeof session.note !== 'string' || !Number.isFinite(session.at)) throw Error('The backup contains an invalid session.');
     const defaults = fresh();
     const result = { ...defaults, plans:value.plans, sessions:value.sessions, activeId:ids.has(value.activeId) ? value.activeId : null, timer:value.timer && typeof value.timer === 'object' ? value.timer : {}, revision:Number.isSafeInteger(value.revision) ? value.revision : 0 };
+    if(Number.isSafeInteger(value.quoteIndex) && value.quoteIndex >= 0 && value.quoteIndex < 200) result.quoteIndex = value.quoteIndex;
     for(const key of Object.keys(defaults.preferences)) if(typeof value.preferences?.[key] === 'boolean') result.preferences[key] = value.preferences[key];
     return result;
   }
@@ -49,6 +63,6 @@
     storage.setItem(KEY, JSON.stringify(next));
     return next;
   }
-  const api = { KEY, parseMarkdown, changeTask, addTask, cleanText, fresh, validate, commit };
+  const api = { KEY, parseMarkdown, changeTask, addTask, parseTaskBatch, addTasks, isComplete, becameComplete, advanceQuote, cleanText, fresh, validate, commit };
   if(typeof module !== 'undefined' && module.exports) module.exports = api; else root.BrassModel = api;
 })(globalThis);

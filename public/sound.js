@@ -44,6 +44,23 @@ class TypewriterSound {
       }
     } catch { /* Audio device failures must not interrupt task editing. */ }
   }
+  ejectPaper() {
+    if(this.muted) return;
+    try {
+      this.init(); const ctx = this.context, start = ctx.currentTime;
+      // Release the paper lever, turn the platen, then pull the sheet free.
+      this.impact(start,.04,.55,1200);
+      for(let i=0;i<12;i++) this.impact(start+.09+i*.036,.025,.12+(i%2)*.055,850+(i%3)*190);
+      const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain();
+      source.buffer = this.noise; source.loop = true; filter.type = 'bandpass'; filter.Q.value = .45;
+      filter.frequency.setValueAtTime(650,start+.34); filter.frequency.exponentialRampToValueAtTime(2800,start+.95);
+      gain.gain.setValueAtTime(.0001,start); gain.gain.setValueAtTime(.0001,start+.3);
+      gain.gain.exponentialRampToValueAtTime(.32,start+.48); gain.gain.exponentialRampToValueAtTime(.0001,start+1.12);
+      source.connect(filter); filter.connect(gain); gain.connect(this.master); source.start(start+.3); source.stop(start+1.15);
+      source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); };
+      this.impact(start+1.05,.035,.16,700);
+    } catch { /* Completion must succeed even if the audio device is unavailable. */ }
+  }
 }
 window.TypewriterSound = TypewriterSound;
 class ClockSound extends TypewriterSound {

@@ -2,13 +2,16 @@
 
 ## Automated checks
 
-`npm test`: **8 passing tests** covering:
+`npm test`: **13 passing tests** covering:
 
 - Markdown extraction with YAML frontmatter, fenced code, nested tasks, numbered tasks, and sections.
 - Checkbox toggles, edits, and removals preserving prose, prefixes, and CRLF line endings.
 - Text limits, invalid backup schemas, duplicate IDs, invalid journal entries, and recovery of safe defaults.
 - Failed storage writes without changing the last saved revision, plus rejection of stale-tab commits.
 - Timer count-up, pause/resume, reset, configurable durations, four-session long-break suggestion, wall-clock restoration, and one-shot completion at the deadline.
+- Bulk task parsing, 200-task limit, blank/oversized task rejection, initial unchecked state, and CRLF preservation.
+- Completion transitions, including no completion for empty lists or repeated renders.
+- Exactly 200 unique sourced quote records, full-cycle rotation, and compatibility with backups created before quotes were added.
 
 `node --check public/app.js` passed. `npm run build` produced the static deployable files successfully.
 
@@ -24,6 +27,9 @@ The app was served on `http://127.0.0.1:4173` and checked in the in-app browser 
 - Saving an end-of-plan reflection, archiving, and restoring the archived plan.
 - Desktop rendering and a 390 × 844 phone viewport. No horizontal page overflow at the phone size.
 - No browser console errors or warnings during the core task/reload flow.
+- Bulk entry reached from the single-task dialog; a mixed bullet/numbered-checkbox batch created two unchecked tasks. The quote stayed at 1/200 after the first completion, changed to 2/200 after the final task, and stayed at 2/200 after reload.
+- The follow-up preview on port 4181 advanced to quote 3/200 after a focus session and retained it after reload. The dots showed 1 of 4 sessions. Settings were restored to 25/5/15 minutes.
+- Confirmed the title “A quote to note” and the completion message “A little progress. A lovely feeling. ✓” on desktop and phone layouts.
 
 Screenshots: [desktop](desktop-preview.jpg), [phone](mobile-preview.jpg). These screenshots contain synthetic demonstration content; fresh installations start with an empty workspace.
 

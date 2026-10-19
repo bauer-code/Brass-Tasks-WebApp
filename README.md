@@ -27,12 +27,16 @@ npm start
 - Responsive workspace with the original vintage typewriter, brass analog clock, bundled font, and recorded mechanical clock audio.
 - Multiple plans, title search, rename, archive, restore from archive, and deletion with confirmation.
 - Create, edit, complete, uncheck, and remove tasks; undo the most recent removal before the plan changes again.
+- Bulk add up to 200 tasks at once: one per line, with optional bullets, numbering, or Markdown checkboxes. The entire batch is validated before saving; every added task starts unchecked.
 - Full-page and one-task focus views.
 - Import `.md`/`.markdown` by file picker, drag and drop, or pasted text; download the current plan as Markdown.
 - Preserves Markdown prose, frontmatter, headings, and line endings during checkbox toggles and task edits; ignores tasks inside fenced examples and frontmatter.
 - Count-up Pomodoro timer, pause/resume/reset, configurable 1–180 minute durations, short breaks, and a suggested long break after every four focus sessions.
 - Timer recovery after reload, with one-shot completion, focus session journal, and optional end-of-plan reflections.
 - Independent tick/bell controls, a master sound switch, and optional digital readout. Ticking starts disabled.
+- Finishing a nonempty task list plays a synthesized paper-release, platen-ratchet, and paper-pull sound. It respects the master mute switch and does not replay on reload.
+- Four labeled progress dots count focus sessions toward the next long break.
+- A card with 200 curated highlights from your Readwise PDF. It advances after each completed focus Pomodoro or newly completed task list, saves its position, and visits every quote before repeating. Breaks, pauses, resets, and reloads do not advance it. Full provenance is in [the quote collection](docs/QUOTES.md).
 - Browser persistence, cross-tab refresh, stale revision checks, and JSON workspace backups with validated restoration.
 - Keyboard-operable controls, native modal focus handling, visible focus outlines, and reduced-motion support.
 
@@ -56,6 +60,7 @@ See [verification](docs/VERIFICATION.md) for the test coverage and browser check
 public/             Complete static web application
   app.js            UI, persistence integration, audio, and journal
   model.js          Markdown and workspace data operations
+  quotes.js         200 selected Readwise highlights and their source metadata
   pomodoro.js       Timer state machine
   sound.js          Typewriter synthesis and recorded clock playback
   assets/           Local icon, font, and audio

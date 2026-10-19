@@ -22,9 +22,9 @@ function mutate(edit) {
 }
 function run(action) { try { return action(); } catch(error) { toast(error.message); } }
 function active() { return state.plans.find(plan => plan.id === state.activeId && plan.status === 'active'); }
-function savePlan(markdown) {
+function savePlan(markdown, revealNewTasks = false) {
   const completed = M.becameComplete(active().markdown,markdown);
-  mutate(next => { const plan = next.plans.find(p => p.id === next.activeId); plan.markdown = markdown; plan.updatedAt = Date.now(); if(completed) M.advanceQuote(next,BrassQuotes.length); });
+  mutate(next => { const plan = next.plans.find(p => p.id === next.activeId); plan.markdown = markdown; plan.updatedAt = Date.now(); if(revealNewTasks) next.preferences.focus = false; if(completed) M.advanceQuote(next,BrassQuotes.length); });
   render();
   if(completed) { motion.finish(); typeSound.ejectPaper(); toast('Plan complete. A fresh thought for your next chapter.'); }
   else motion.carriage();
@@ -121,9 +121,21 @@ function addTaskDialog(task) {
   const id = active().id;
   openModal(task ? 'Refine your task.' : 'What’s the next small thing?', content => { const input = field('Task', 'task-text', 'text', task?.text || ''); input.maxLength = 500; input.required = true; input.placeholder = 'Something you can actually do'; if(!task) content.append(button('Add multiple tasks instead',bulkTaskDialog,'text-button')); }, task ? 'Save task' : 'Add task', () => {
     if(active()?.id !== id) throw Error('The active plan changed. Open this dialog again.');
+    const previousCount = M.parseMarkdown(active().markdown).tasks.length;
     const markdown = task ? M.changeTask(active().markdown, task.line, 'edit', $('#task-text').value) : M.addTask(active().markdown, $('#task-text').value);
-    savePlan(markdown); typeSound.play();
+    savePlan(markdown,!task);
+    if(task) typeSound.play(); else printAddedTasks(previousCount);
   });
+}
+function printAddedTasks(previousCount) {
+  const added = M.parseMarkdown(active().markdown).tasks.slice(previousCount,previousCount + 8);
+  const rows = added.map(task => document.querySelector(`[data-task-line="${task.line}"]`)).filter(Boolean);
+  if(!rows.length) return;
+  const paper = $('#paper');
+  paper.scrollTop += rows[0].getBoundingClientRect().top - paper.getBoundingClientRect().top - 12;
+  const bounds = paper.getBoundingClientRect();
+  const visible = rows.filter(row => { const box = row.getBoundingClientRect(); return box.top < bounds.bottom && box.bottom > bounds.top; });
+  motion.printTasks(visible.map(row => row.querySelector('.task-text')),character => typeSound.play(character === '\n' ? 'return' : character === ' ' ? 'space' : 'key'));
 }
 function bulkTaskDialog() {
   if(!active()) return newPlanDialog();
@@ -137,7 +149,8 @@ function bulkTaskDialog() {
   },'Add tasks',() => {
     if(active()?.id !== id) throw Error('The active plan changed. Open this dialog again.');
     const text = $('#bulk-tasks').value, count = M.parseTaskBatch(text).length;
-    savePlan(M.addTasks(active().markdown,text)); typeSound.play('return'); toast(`${count} tasks added.`);
+    const previousCount = M.parseMarkdown(active().markdown).tasks.length;
+    savePlan(M.addTasks(active().markdown,text),true); printAddedTasks(previousCount); toast(`${count} tasks added.`);
   });
 }
 function renderQuote() {

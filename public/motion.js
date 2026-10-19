@@ -1,10 +1,11 @@
 (function(root) {
   // Finite visual effects only: saved content and input never wait for animation.
   class BrassMotion {
-    constructor(document, preference) {
+    constructor(document, preference, schedule = {set:(fn,delay) => setTimeout(fn,delay),clear:timer => clearTimeout(timer)}) {
       this.document = document;
       this.preference = preference;
       this.effects = new Map();
+      this.schedule = schedule;
       this.onPreference = () => { if(preference.matches) this.cancel(); };
       this.onVisibility = () => { if(document.hidden) this.cancel(); };
       preference.addEventListener('change',this.onPreference);
@@ -20,7 +21,47 @@
       effect.finished.then(release,release);
       return effect;
     }
-    cancel() { for(const effect of this.effects.values()) effect.cancel(); this.effects.clear(); }
+    cancel() { this.stopPrinting(); for(const effect of this.effects.values()) effect.cancel(); this.effects.clear(); }
+    stopPrinting() {
+      if(!this.printing) return;
+      this.schedule.clear(this.printing.timer);
+      for(const entry of this.printing.entries) { entry.overlay.remove(); entry.element.classList.remove('task-printing'); }
+      this.printing = null;
+    }
+    printTasks(elements, sound = () => {}) {
+      this.stopPrinting();
+      if(!this.enabled) return;
+      const segmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter(undefined,{granularity:'grapheme'}) : null;
+      const entries = elements.slice(0,8).filter(element => element.isConnected).map(element => {
+        const text = element.textContent;
+        const characters = segmenter ? [...segmenter.segment(text)].map(part => part.segment) : [...text];
+        const overlay = this.document.createElement('span'); overlay.className = 'task-print'; overlay.setAttribute('aria-hidden','true');
+        element.classList.add('task-printing'); element.append(overlay);
+        return {element,overlay,characters,index:0};
+      });
+      if(!entries.length) return;
+      const total = entries.reduce((n,entry) => n + entry.characters.length,0);
+      const delay = Math.max(12,Math.min(45,6000/Math.max(1,total))), chunk = Math.max(1,Math.ceil(total/500));
+      const job = {entries,timer:null,row:0}; this.printing = job;
+      const tick = () => {
+        if(this.printing !== job) return;
+        if(!this.enabled || entries.some(entry => !entry.element.isConnected)) return this.stopPrinting();
+        const entry = entries[job.row];
+        const next = entry.characters.slice(entry.index,entry.index + chunk); entry.index += next.length;
+        entry.overlay.textContent += next.join('');
+        const character = next.at(-1);
+        if(character) { this.strike(character); sound(character); }
+        if(entry.index >= entry.characters.length) {
+          entry.overlay.remove(); entry.element.classList.remove('task-printing'); job.row++;
+          if(job.row === entries.length) { this.printing = null; this.carriage(); sound('\n'); return; }
+          this.carriage(); sound('\n');
+        }
+        job.timer = this.schedule.set(tick,delay);
+      };
+      // Let the prompt close before the first key strikes.
+      try { job.timer = this.schedule.set(tick,180); }
+      catch { this.stopPrinting(); }
+    }
     feed() {
       if(!this.enabled) return;
       const paper = this.document.querySelector('#paper');

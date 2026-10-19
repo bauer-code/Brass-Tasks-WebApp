@@ -71,3 +71,54 @@ test('new renders can cancel every effect and missing animation support is harml
   assert.doesNotThrow(()=>e.motion.animate({},[],{duration:100}));
   e.motion.destroy();
 });
+
+function printingEnvironment(texts) {
+  const e = environment(), pending = new Map(); let id = 0;
+  e.motion.schedule = {set(fn){pending.set(++id,fn);return id;},clear(key){pending.delete(key);}};
+  e.document.createElement = () => ({textContent:'',setAttribute(name,value){this[name]=value;},remove(){this.removed=true;}});
+  const elements = texts.map(text => {
+    const classes = new Set();
+    return {textContent:text,isConnected:true,overlays:[],classList:{add:name=>classes.add(name),remove:name=>classes.delete(name),contains:name=>classes.has(name)},append(overlay){this.overlays.push(overlay);}};
+  });
+  const step = () => { const [key,fn] = pending.entries().next().value; pending.delete(key); fn(); };
+  return {...e,pending,elements,step};
+}
+
+test('task printing reveals whole graphemes while retaining the complete accessible text', () => {
+  const e = printingEnvironment(['A👩‍💻é']), sounds = [];
+  const element = e.elements[0]; e.motion.printTasks(e.elements,char=>sounds.push(char));
+  assert.equal(element.textContent,'A👩‍💻é');
+  assert.equal(element.overlays[0]['aria-hidden'],'true');
+  e.step(); assert.equal(element.overlays[0].textContent,'A');
+  e.step(); assert.equal(element.overlays[0].textContent,'A👩‍💻');
+  e.step(); assert.equal(element.overlays[0].textContent,'A👩‍💻é');
+  assert.deepEqual(sounds,['A','👩‍💻','é','\n']);
+  assert.equal(element.classList.contains('task-printing'),false);
+  assert.equal(e.pending.size,0); assert.equal(e.motion.printing,null);
+  e.motion.destroy();
+});
+
+test('interrupted printing restores full text and cannot leave a stale timer', () => {
+  const e = printingEnvironment(['First task','Second task']);
+  e.motion.printTasks(e.elements); e.step();
+  e.preference.matches = true; e.preference.emit('change');
+  assert.equal(e.pending.size,0);
+  assert.ok(e.elements.every(el=>el.overlays[0].removed && !el.classList.contains('task-printing')));
+  e.motion.printTasks(e.elements); assert.equal(e.pending.size,0);
+  e.preference.matches = false; e.motion.printTasks(e.elements); e.step();
+  e.document.hidden = true; e.document.emit('visibilitychange');
+  assert.equal(e.pending.size,0); assert.equal(e.motion.printing,null);
+  e.document.hidden = false; e.motion.printTasks(e.elements); e.elements[0].isConnected = false; e.step();
+  assert.equal(e.pending.size,0); assert.equal(e.motion.printing,null);
+  e.motion.destroy();
+});
+
+test('bulk printing has one timer, a bounded queue, and completes without changing source text', () => {
+  const e = printingEnvironment(Array.from({length:200},()=> 'E'.repeat(500)));
+  e.motion.printTasks(e.elements);
+  let ticks = 0;
+  while(e.pending.size) { assert.equal(e.pending.size,1); assert.ok(++ticks <= 504); e.step(); }
+  assert.equal(e.elements.filter(el=>el.overlays.length).length,8);
+  assert.ok(e.elements.every(el=>el.textContent === 'E'.repeat(500) && !el.classList.contains('task-printing')));
+  e.motion.destroy();
+});

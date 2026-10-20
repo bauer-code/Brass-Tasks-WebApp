@@ -90,7 +90,7 @@ function notesDialog() {
     for(const note of notes) {
       const card = node('article','saved-note');
       card.append(node('h3','',note.title),node('small','',note.status === 'archived' ? 'Archived' : note.finishedAt ? 'Finished' : 'Draft'));
-      if(Number.isFinite(note.createdAt)) card.append(node('small','note-date','Created ' + new Date(note.createdAt).toLocaleString()));
+      if(Number.isFinite(note.createdAt)) card.append(node('small','note-date','Created ' + new Date(note.createdAt).toLocaleString('en-GB', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'})));
       const actions = node('div','saved-note-actions');
       actions.append(button(note.status === 'archived' ? 'Restore & open' : 'Open note',() => run(() => {
         mutate(next => { next.plans.find(p => p.id === note.id).status = 'active'; next.activeId = note.id; });
@@ -395,9 +395,9 @@ $('#history-button').onclick = () => openModal('Your session journal.', content 
   const entries = M.journalEntries(state);
   if(!entries.length) content.append(node('p','','Your notes, finished focus sessions, and end-of-plan reflections will appear here. Every small step counts.'));
   else {
-    content.append(button('Download journal', () => download('brass-tasks-journal.md','# Session journal\n\n' + entries.map(entry => `## ${entry.title}\n${new Date(entry.at).toLocaleString()} · ${entry.label || 'Session'}\n\n${entry.note}\n`).join('\n')), 'text-button'));
+    content.append(button('Download journal', () => download('brass-tasks-journal.md','# Session journal\n\n' + entries.map(entry => `## ${entry.title}\n${new Date(entry.at).toLocaleString('en-GB', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'})} · ${entry.label || 'Session'}\n\n${entry.note}\n`).join('\n')), 'text-button'));
     entries.forEach(entry => {
-      const item = node('article','journal-entry'); item.append(node('small','',`${new Date(entry.at).toLocaleString()} · ${entry.label || 'Session'}`),node('h3','',entry.title),node('p','',entry.note));
+      const item = node('article','journal-entry'); item.append(node('small','',`${new Date(entry.at).toLocaleString('en-GB', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'})} · ${entry.label || 'Session'}`),node('h3','',entry.title),node('p','',entry.note));
       if(entry.pageId) {
         const page = state.plans.find(page => page.id === entry.pageId), actions = node('div','saved-note-actions');
         actions.append(button(page.status === 'archived' ? 'Restore & open note' : 'Open note',() => run(() => { mutate(next => M.movePage(next,page.id,'active')); render(); closeModal(); $('#paper').focus(); }),'text-button'),pageIcon('download','Download note: ' + page.title,() => download(M.pageFilename(page),M.exportMarkdown(page))));
@@ -527,5 +527,5 @@ for(const keys of ['1234567890','QWERTYUIOP','ASDFGHJKL','ZXCVBNM!?']) { const r
 for(let i = 0;i < 37;i++) { const line = document.createElementNS('http://www.w3.org/2000/svg','line'); const angle = (i / 36 * 140 + 20) * Math.PI / 180; for(const [attr,value] of Object.entries({x1:130+Math.cos(angle)*112,y1:-19+Math.sin(angle)*82,x2:130+Math.cos(angle)*70,y2:-19+Math.sin(angle)*43})) line.setAttribute(attr,value); $('#typebars').append(line); }
 for(let i = 0;i < 60;i++) { const angle = i/60*Math.PI*2, major = i%5 === 0; const line = document.createElementNS('http://www.w3.org/2000/svg','line'); for(const [attr,value] of Object.entries({x1:100+Math.sin(angle)*(major?80:85),y1:100-Math.cos(angle)*(major?80:85),x2:100+Math.sin(angle)*90,y2:100-Math.cos(angle)*90})) line.setAttribute(attr,value); if(major) line.classList.add('major'); $('#clock-ticks').append(line); }
 for(let i = 1;i <= 12;i++) { const angle = i/12*Math.PI*2; const text = document.createElementNS('http://www.w3.org/2000/svg','text'); text.setAttribute('x',100+Math.sin(angle)*69); text.setAttribute('y',100-Math.cos(angle)*69); text.textContent = i; $('#clock-numbers').append(text); }
-$('#today-label').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}).toUpperCase() + ' / ROOM FOR FOCUS';
+$('#today-label').textContent = new Date().toLocaleDateString('en-GB',{weekday:'long',month:'long',day:'numeric'}).toUpperCase() + ' / ROOM FOR FOCUS';
 render(); if(storageError) toast(storageError); else completeTimer();
